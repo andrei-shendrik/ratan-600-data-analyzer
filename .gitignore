@@ -1,0 +1,30 @@
+# Pycharm
+.idea/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# build and distribution
+build/
+dist/
+develop-eggs/
+*.egg-info/
+*.egg
+*.so
+
+# Virtual environment
+.venv/
+venv/
+env/
+
+# log
+.log/
+log/
+*.log
+
+# user specific
+.old/
