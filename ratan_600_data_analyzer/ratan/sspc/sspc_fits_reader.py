@@ -8,7 +8,6 @@ from ratan_600_data_analyzer.logger.logger import logger
 from ratan_600_data_analyzer.observation.observation import Observation
 from ratan_600_data_analyzer.ratan.ratan_observation_reader import RatanObservationReader
 from ratan_600_data_analyzer.ratan.sspc.sspc_data import SSPCData
-from ratan_600_data_analyzer.ratan.sspc.sspc_metadata import SSPCMetadata
 from ratan_600_data_analyzer.ratan.sspc.sspc_metadata_fits_loader import SSPCMetadataFitsLoader
 from ratan_600_data_analyzer.ratan.sspc.sspc_observation import SSPCObservation
 

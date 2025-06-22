@@ -70,8 +70,6 @@ class SSPCMetadata(RatanObservationMetadata):
     def __init__(self):
         super().__init__()
 
-        self._data_receiver = None
-
         self._altitude = None
         self._azimuth = None
         self._cdelt1 = None
@@ -87,7 +85,7 @@ class SSPCMetadata(RatanObservationMetadata):
         self._solar_radius = None
         self._telescope = None
 
-        self._file = None
+        self._obs_file = None
         self._data_receiver = None
         self._data_file_extension = None
 
@@ -135,6 +133,14 @@ class SSPCMetadata(RatanObservationMetadata):
         self._telescope = None
         self._flag_iv = None
         self._is_calibrated = None
+
+    @property
+    def obs_file(self):
+        return self._obs_file
+
+    @obs_file.setter
+    def obs_file(self, obs_file):
+        self._obs_file = obs_file
 
     @property
     def date_obs(self):

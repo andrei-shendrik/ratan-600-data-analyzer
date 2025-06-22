@@ -14,3 +14,7 @@ class DataReceiver(Enum):
     FAST_ACQUISITION_3_18GHZ = "Fast Acquisition 3-18 GHz"
     SSPC = "Solar spectral polarization complex"
     SSPC_16 = "Solar spectral polarization complex SSPC-16"
+
+    @property
+    def is_sspc(self) -> bool:
+        return self in {DataReceiver.SSPC, DataReceiver.SSPC_16}

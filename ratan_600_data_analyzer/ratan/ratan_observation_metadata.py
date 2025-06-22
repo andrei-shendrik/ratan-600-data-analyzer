@@ -41,6 +41,16 @@ class RatanObservationMetadata(ObservationMetadata, ABC):
 
     @property
     @abstractmethod
+    def obs_file(self):
+        pass
+
+    @obs_file.setter
+    @abstractmethod
+    def obs_file(self, obs_file):
+        pass
+
+    @property
+    @abstractmethod
     def data_receiver(self):
         pass
 

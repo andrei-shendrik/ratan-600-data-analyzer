@@ -1,4 +1,3 @@
-import tomllib
 from pathlib import Path
 
 import matplotlib
@@ -6,43 +5,54 @@ from matplotlib import pyplot as plt
 
 from ratan_600_data_analyzer.ratan.data_extractor import DataExtractor
 from ratan_600_data_analyzer.ratan.polarization_type import PolarizationType
-from ratan_600_data_analyzer.ratan.ratan_observation_builder import RatanObservationBuilder
+from ratan_600_data_analyzer.ratan.ratan_builder_factory import RatanBuilderFactory
 
 def process_fast_acquisition():
+
     """
         todo
-        Задачи:
-        Перебросить data_layout в метаданные
         __
         single_channel_data
         __
         TimeDownsampler
         FrequencyDownsampler
 
-        write(output_file, type)
-
         pipeline Director
-
-        MetadataLoader
-        load
-        SSPCMetadataFitsExtractor
-        extract
     """
+
+    TIME_REDUCTION_FACTOR = 32
+    FREQUENCY_REDUCTION_FACTOR = 10
+
+    fast_acquisition_bin_file = Path(
+        r"D:\data\astro\ratan-600\fast_acquisition\1-3ghz\2024\08\2024-08-01_121957_sun+00.bin")
 
     fast_acq_fits_file = Path(
         r"D:\data\astro\ratan-600\fast_acquisition\1-3ghz\fits\2024\08\2024-08-01_121957_sun+00.fits")
 
+    output_fits_file = Path(
+        r"D:\data\astro\ratan-600\fast_acquisition\1-3ghz\fits\2024\08\2024-08-01_121957_sun+00_out.fits")
 
+    builder = RatanBuilderFactory.create_builder(fast_acquisition_bin_file)
+    observation = None
+    if RatanBuilderFactory.is_fast_1_3ghz_builder(builder):
+        observation = (builder
+                       .read()
+                       # .remove_spikes(method="kurtosis")
+                       # .interpolate_gaps(method="linear")
+                       # .time_downsample(TIME_REDUCTION_FACTOR)
+                       .build())
 
-    # fast acquisition test
-    fast_acquisition_bin_file = Path(
-        r"D:\data\astro\ratan-600\fast_acquisition\1-3ghz\2024\08\2024-08-01_121957_sun+00.bin")
+        # .remove_data(kurtosis)
+        # .frequency_downsample(FREQUENCY_REDUCTION_FACTOR)
+        # .calibrate(method="components")
+        # .write(".fits", output_fits_file)
+    if observation is None:
+        raise Exception("No observation created")
 
-    builder = RatanObservationBuilder(fast_acquisition_bin_file)
-    observation = (builder
-                   .read()
-                   #.calibrate("Components")
-                   .build())
+    # writer = FitsWriter(observation)
+    # output_fits_file = Path(r"D:\data\astro\ratan-600\fast_acquisition\1-3ghz\fits\2024\08\2024-08-01_121957_sun+00.fits")
+    # writer.save(output_fits_file)
+
     print(observation.metadata.polarizations)
     print(f"Dateobs: {observation.metadata.datetime_culmination_utc}")
 
@@ -102,11 +112,15 @@ def process_fast_acquisition():
 def process_sspc():
     sspc_fits_file = Path(r"D:\data\astro\ratan-600\sun\fits\level1\2017\09\20170905_121217_sun+0.fits")
 
-    builder = RatanObservationBuilder(sspc_fits_file)
-    observation = (builder
-                   .read()
-                   # .calibrate("Components")
-                   .build())
+    builder = RatanBuilderFactory.create_builder(sspc_fits_file)
+    observation = None
+    if RatanBuilderFactory.is_sspc_builder(builder):
+        observation = (builder
+                       .read()
+                       .build())
+    if observation is None:
+        raise Exception("No observation created")
+
     print(observation.metadata.polarizations)
     print(f"Dateobs: {observation.metadata.datetime_culmination_utc}")
 
@@ -140,8 +154,8 @@ def process_sspc():
 
 
 def main():
-    process_fast_acquisition()
     # process_sspc()
+    process_fast_acquisition()
 
 if __name__ == "__main__":
   main()
