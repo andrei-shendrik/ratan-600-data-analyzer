@@ -7,8 +7,8 @@ import numpy as np
 from ratan_600_data_analyzer.logger.logger import logger
 from ratan_600_data_analyzer.ratan.axis import Axis
 from ratan_600_data_analyzer.ratan.data_layout import DataLayout
-from ratan_600_data_analyzer.ratan.fits_parameters_extractor import FitsParametersExtractor
-from ratan_600_data_analyzer.ratan.fits_table_parameters_extractor import FitsTableParametersExtractor
+from ratan_600_data_analyzer.fits.fits_header_reader import FitsHeaderReader
+from ratan_600_data_analyzer.fits.fits_bin_table_reader import FitsBinTableReader
 from ratan_600_data_analyzer.ratan.polarization_type import PolarizationType
 from ratan_600_data_analyzer.ratan.ratan_metadata_loader import RatanMetadataLoader
 from ratan_600_data_analyzer.ratan.sspc.sspc_constants import SSPC_16_START_DATE
@@ -22,7 +22,7 @@ class SSPCMetadataFitsLoader(RatanMetadataLoader):
     """
 
     @staticmethod
-    def load(header, hdu2_table, array_3d) -> SSPCMetadata:
+    def load(header, bin_table, array_3d) -> SSPCMetadata:
 
         metadata = SSPCMetadata()
 
@@ -31,32 +31,32 @@ class SSPCMetadataFitsLoader(RatanMetadataLoader):
             raise RuntimeError(f"Header is none")
 
         metadata.header = copy.deepcopy(header)
-        fits_param_extractor = FitsParametersExtractor(header)
+        fits_header_reader = FitsHeaderReader(header)
 
-        metadata.date_obs = fits_param_extractor.get_fits_header_value("DATE-OBS")
-        metadata.time_obs = fits_param_extractor.get_fits_header_value("TIME-OBS")
-        metadata.flag_iv = fits_param_extractor.get_fits_header_value("FLAG_IV")  # 1 - data is RL; 0 - data is IV
-        metadata.start_obs = fits_param_extractor.get_fits_header_value("STARTOBS")
-        metadata.stop_obs = fits_param_extractor.get_fits_header_value("STOPOBS")
-        metadata.cdelt1 = fits_param_extractor.get_fits_header_value("CDELT1")
+        metadata.date_obs = fits_header_reader.get_value("DATE-OBS")
+        metadata.time_obs = fits_header_reader.get_value("TIME-OBS")
+        metadata.flag_iv = fits_header_reader.get_value("FLAG_IV")  # 1 - data is RL; 0 - data is IV
+        metadata.start_obs = fits_header_reader.get_value("STARTOBS")
+        metadata.stop_obs = fits_header_reader.get_value("STOPOBS")
+        metadata.cdelt1 = fits_header_reader.get_value("CDELT1")
         if metadata.cdelt1 < 0.1:
             metadata._is_bad = True
-        metadata.telescope = fits_param_extractor.get_fits_header_value("TELESCOP")
-        metadata.naxis = fits_param_extractor.get_fits_header_value("NAXIS")
-        metadata.naxis1 = fits_param_extractor.get_fits_header_value("NAXIS1")
-        metadata.object = fits_param_extractor.get_fits_header_value("OBJECT")
-        metadata.azimuth = fits_param_extractor.get_fits_header_value("AZIMUTH")
-        calibr = fits_param_extractor.get_fits_header_value("CALIBR")
+        metadata.telescope = fits_header_reader.get_value("TELESCOP")
+        metadata.naxis = fits_header_reader.get_value("NAXIS")
+        metadata.naxis1 = fits_header_reader.get_value("NAXIS1")
+        metadata.object = fits_header_reader.get_value("OBJECT")
+        metadata.azimuth = fits_header_reader.get_value("AZIMUTH")
+        calibr = fits_header_reader.get_value("CALIBR")
         if calibr == 1:
             metadata.is_calibrated = True
         else:
             metadata.is_calibrated = False
 
-        metadata.crpix1 = fits_param_extractor.get_fits_header_value("CRPIX1")
-        metadata.smooth = fits_param_extractor.get_fits_header_value("SMOOTH")
-        metadata.armdt = fits_param_extractor.get_fits_header_value("ARMDT")
+        metadata.crpix1 = fits_header_reader.get_value("CRPIX1")
+        metadata.smooth = fits_header_reader.get_value("SMOOTH")
+        metadata.armdt = fits_header_reader.get_value("ARMDT")
 
-        metadata._solar_r = fits_param_extractor.get_fits_header_value("SOLAR_R")
+        metadata._solar_r = fits_header_reader.get_value("SOLAR_R")
         # self._solar_r *= SOLAR_R_COEFF
 
         """
@@ -78,10 +78,10 @@ class SSPCMetadataFitsLoader(RatanMetadataLoader):
             Heliographic longitude of the central point of the solar disk.
         """
 
-        metadata.solar_p = fits_param_extractor.get_fits_header_value("SOLAR_P")
-        metadata.solar_b = fits_param_extractor.get_fits_header_value("SOLAR_B")
+        metadata.solar_p = fits_header_reader.get_value("SOLAR_P")
+        metadata.solar_b = fits_header_reader.get_value("SOLAR_B")
 
-        metadata.solar_declination = fits_param_extractor.get_fits_header_value("SOL_DEC")
+        metadata.solar_declination = fits_header_reader.get_value("SOL_DEC")
 
         """
             Формуля для расчета позиционного угла взята из работы:
@@ -153,7 +153,7 @@ class SSPCMetadataFitsLoader(RatanMetadataLoader):
         """
 
         if metadata.armdt is None:
-            dspdt = fits_param_extractor.get_fits_header_value("DSPDT")
+            dspdt = fits_header_reader.get_value("DSPDT")
             if dspdt is not None and metadata.smooth is None:
                 metadata.smooth = 30
                 metadata.armdt = dspdt
@@ -175,14 +175,14 @@ class SSPCMetadataFitsLoader(RatanMetadataLoader):
         metadata.datetime_reg_stop_utc = metadata.datetime_reg_stop_local.astimezone(timezone.utc)
 
         # hdu2 table
-        if hdu2_table is None:
+        if bin_table is None:
             raise RuntimeError(f"HDU2_table is None")
 
-        metadata.hdu2_table = copy.deepcopy(hdu2_table)
+        metadata.hdu2_table = copy.deepcopy(bin_table)
         axes = [Axis.FREQUENCY, Axis.POLARIZATION, Axis.SAMPLE]
 
-        fits_table_param_extractor = FitsTableParametersExtractor(hdu2_table)
-        frequency_axis = fits_table_param_extractor.get_array("freq")
+        fits_bin_table_reader = FitsBinTableReader(bin_table)
+        frequency_axis = fits_bin_table_reader.get_column("freq")
 
         sspc_16_start_date = DateUtils.parse_date(SSPC_16_START_DATE, "%Y%m%d")
         if metadata.datetime_culmination_utc > sspc_16_start_date:
@@ -208,4 +208,3 @@ class SSPCMetadataFitsLoader(RatanMetadataLoader):
             message = "The data is incorrectly sized: " + str(data.shape) + ". Expected 3D array"
             logger.error(message)
             raise ValueError(message)
-

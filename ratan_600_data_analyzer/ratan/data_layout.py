@@ -31,3 +31,8 @@ class DataLayout:
         if len(indices) == 0:
             raise ValueError(f"Polarization {polarization} not found in DataLayout")
         return int(indices[0])
+
+    @property
+    def frequency_axis(self):
+        return self._frequency_axis
+

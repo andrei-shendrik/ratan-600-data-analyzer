@@ -51,7 +51,7 @@ class FastAcquisition1To3GHzMetadataBinLoader(RatanMetadataLoader):
         desc_reader = DescReader()
         desc_data = desc_reader.read(metadata.desc_file)
 
-        metadata.object = desc_data.get_value("fits_words.OBJECT")
+        metadata.observation_object = desc_data.get_value("fits_words.OBJECT")
         azimuth_str = desc_data.get_value("fits_words.AZIMUTH")
         try:
             metadata.azimuth = float(azimuth_str)
@@ -69,14 +69,14 @@ class FastAcquisition1To3GHzMetadataBinLoader(RatanMetadataLoader):
         metadata.datetime_reg_start_local = datetime.fromisoformat(start_time_str)
         metadata.datetime_reg_start_utc = metadata.datetime_reg_start_local.astimezone(ZoneInfo('UTC'))
 
-        metadata.solar_p = desc_data.get_value("fits_words.SOLAR_P")
-        metadata.solar_b = desc_data.get_value("fits_words.SOLAR_B")
-        metadata.solar_r = desc_data.get_value("fits_words.SOLAR_R")
+        metadata.solar_p = float(desc_data.get_value("fits_words.SOLAR_P"))
+        metadata.solar_b = float(desc_data.get_value("fits_words.SOLAR_B"))
+        metadata.solar_r = float(desc_data.get_value("fits_words.SOLAR_R"))
 
-        metadata.altitude = desc_data.get_value("fits_words.ALTITUDE")
+        metadata.altitude = float(desc_data.get_value("fits_words.ALTITUDE"))
 
         metadata.solar_declination = float(desc_data.get_value("fits_words.DEC"))
-        metadata.solar_ra = desc_data.get_value("fits_words.RA")
+        metadata.solar_ra = float(desc_data.get_value("fits_words.RA"))
 
         metadata.telescope = "RATAN-600"
 

@@ -75,6 +75,7 @@ class FastAcquisition1To3GHzMetadata(RatanObservationMetadata):
 
     def __init__(self):
         super().__init__()
+        self._obs_file = None
         self._bin_file = None
         self._desc_file = None
         self._data_receiver = None
@@ -129,7 +130,6 @@ class FastAcquisition1To3GHzMetadata(RatanObservationMetadata):
         self._kurtosis_lower_bound_2_3ghz = None
         self._kurtosis_upper_bound_2_3ghz = None
 
-        self._observation_object = None
         self._cdelt1 = None
         self._auto_polarization_switch = None
         self._datetime_culmination_efrat_local = None
@@ -154,6 +154,14 @@ class FastAcquisition1To3GHzMetadata(RatanObservationMetadata):
         self._startobs_utc = None
         self._stopobs_local = None
         self._stopobs_utc = None
+
+    @property
+    def obs_file(self):
+        return self._bin_file
+
+    @obs_file.setter
+    def obs_file(self, obs_file):
+        self._bin_file = obs_file
 
     @property
     def bin_file(self):

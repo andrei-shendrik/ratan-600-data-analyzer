@@ -1,7 +1,5 @@
 from pathlib import Path
 
-from ratan_600_data_analyzer.ratan.fast_acquisition.fast_acquisition_1_3ghz.fast_acquisition_1_3ghz_factory import \
-    FastAcquisition1To3GHzFactory
 from ratan_600_data_analyzer.ratan.ratan_observation_processor import RatanObservationProcessor
 
 

@@ -1,6 +1,9 @@
 import warnings
 from pathlib import Path
+
+import matplotlib
 import numpy as np
+from matplotlib import pyplot as plt
 
 from ratan_600_data_analyzer.observation.observation import Observation
 from ratan_600_data_analyzer.ratan.fast_acquisition.fast_acquisition_1_3ghz import fast_input
@@ -19,6 +22,7 @@ from ratan_600_data_analyzer.ratan.ratan_observation_reader import RatanObservat
 class FastAcquisition1To3GHzBinReader(RatanObservationReader):
 
     def can_read(self, bin_file: Path):
+        # todo
         if not bin_file.suffix.lower() == '.bin':
             return False
         # try:
@@ -37,19 +41,44 @@ class FastAcquisition1To3GHzBinReader(RatanObservationReader):
             p1
         """
 
+        # figure
+        matplotlib.use('TkAgg')  # 'Qt5Agg', 'WxAgg'
+
         c0p0_data, c0p1_data, c1p0_data, c1p1_data, \
             c0p0_kurtosis, c0p1_kurtosis, c1p0_kurtosis, c1p1_kurtosis, \
             c0p0_state, c0p1_state, c1p0_state, c1p1_state = self._get_data_from_file(bin_file)
 
+        # window
+        plt.figure()
+        plt.plot(c0p0_data, marker='o',
+                 markersize=1,
+                 markerfacecolor='none')
+        plt.show()
+
+        """
+            Последнее место, где используется куртозис. Если он понадобится дальше, нужно дописать класс соответствующим
+            образом (свойства, выбор значений для работы и т.п.)
+        """
         c0p0_data[c0p0_kurtosis <= KURT_THRESHOLD] = np.nan
         c0p1_data[c0p1_kurtosis <= KURT_THRESHOLD] = np.nan
         c1p0_data[c1p0_kurtosis <= KURT_THRESHOLD] = np.nan
         c1p1_data[c1p1_kurtosis <= KURT_THRESHOLD] = np.nan
 
+
+
+        """
+            replace_nan заполняет nan значениями, полученными линейной интерполяцией между крайними значениями соседних
+            промежутков. В fast_input есть функция replace_nan_interp, которая вычисляет средние по соседним промежуткам
+            и интерполирует между этими средними, что кажется более корректным; кроме того, она может добавлять к
+            интерполированным значениям гауссовский шум с мощностью, равной среднему арифметическому мощности шума в
+            соседних промежутках. Естественно, все это работает гораздо медленнее.
+        """
         ch0_pol0 = fast_input.replace_nan(c0p0_data)
         ch0_pol1 = fast_input.replace_nan(c0p1_data)
         ch1_pol0 = fast_input.replace_nan(c1p0_data)
         ch1_pol1 = fast_input.replace_nan(c1p1_data)
+
+
 
         joined_channels_0 = np.hstack((np.fliplr(ch0_pol0), ch1_pol0)).T  # 1-3 GHz pol0
         joined_channels_1 = np.hstack((np.fliplr(ch0_pol1), ch1_pol1)).T  # 1-3 GHz pol1
@@ -69,7 +98,29 @@ class FastAcquisition1To3GHzBinReader(RatanObservationReader):
     def read_metadata(self, file_path: Path) -> Observation:
         pass
 
+    # todo
+    # .gz
     def _get_data_from_file(self, file, remove_spikes=True):
+
+        # Если файл - архив, распаковываен и читаем данные в соответствии с форматом fast_input.dt;
+        # если не архив, просто читаем
+
+        # if file_name.endswith(".gz"):
+        #     try:
+        #         with gzip.open(file_name) as f:
+        #             block_array = np.frombuffer(f.read(), dtype=fast_input.dt)
+        #     except Exception as e:
+        #         logging.warning(f"get_data_from_file(): {e}")
+        # else:
+        #     try:
+        #         block_array = np.fromfile(file_name, dtype=fast_input.dt)
+        #     except Exception as e:
+        #         logging.warning(f"get_data_from_file(): {e}")
+
+        # Если что-то прочиталось, заполняем им свойства модели
+        #if block_array is not None:
+        #    self.read_data(block_array=block_array, remove_spikes=remove_spikes)
+
         block_array = np.fromfile(file, dtype=dt)
 
         return self._get_data(block_array, remove_spikes=True)
@@ -152,6 +203,9 @@ class FastAcquisition1To3GHzBinReader(RatanObservationReader):
         return a, b
 
     def _trim_polarization_array(self, pol_array: np.array):
+        # Приводит массив к размеру, кратному self.time_reduction_factor, усредняет его по времени и заменяет
+        # возможные nan интерполированными значениями
+
         n_bands, n_points = np.shape(pol_array)
         pol_array = pol_array[:, :(n_points // TIME_REDUCTION_FACTOR) * TIME_REDUCTION_FACTOR]
         try:
