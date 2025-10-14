@@ -1,35 +1,42 @@
-import warnings
+import gzip
 from pathlib import Path
 
-import matplotlib
 import numpy as np
-from matplotlib import pyplot as plt
 
 from ratan_600_data_analyzer.observation.observation import Observation
 from ratan_600_data_analyzer.ratan.fast_acquisition.fast_acquisition_1_3ghz import fast_input
-from ratan_600_data_analyzer.ratan.fast_acquisition.fast_acquisition_1_3ghz.fast_acquisition_1_3ghz_constants import dt, POLARIZATION_MASK, CHUNK_LENGTH, KURT_THRESHOLD, \
-    TIME_REDUCTION_FACTOR
+from ratan_600_data_analyzer.ratan.fast_acquisition.fast_acquisition_1_3ghz.fast_acquisition_1_3ghz_configuration import \
+    config
 from ratan_600_data_analyzer.ratan.fast_acquisition.fast_acquisition_1_3ghz.fast_acquisition_1_3ghz_data import \
     FastAcquisition1To3GHzData
 from ratan_600_data_analyzer.ratan.fast_acquisition.fast_acquisition_1_3ghz.fast_acquisition_1_3ghz_metadata_bin_loader import \
     FastAcquisition1To3GHzMetadataBinLoader
 from ratan_600_data_analyzer.ratan.fast_acquisition.fast_acquisition_1_3ghz.fast_acquisition_1_3ghz_observation import \
     FastAcquisition1To3GHzObservation
+from ratan_600_data_analyzer.ratan.fast_acquisition.fast_acquisition_1_3ghz.raw_data.fast_acquisition_1_3ghz_raw_data import \
+    FastAcquisition1To3GHzRawData
+from ratan_600_data_analyzer.ratan.fast_acquisition.fast_acquisition_1_3ghz.raw_data.generator_state_data import \
+    GeneratorStateData
+from ratan_600_data_analyzer.ratan.fast_acquisition.fast_acquisition_1_3ghz.raw_data.kurtosis_data import KurtosisData
+from ratan_600_data_analyzer.ratan.fast_acquisition.fast_acquisition_1_3ghz.raw_data.polarization_channels_data import \
+    PolarizationChannelsData
+from ratan_600_data_analyzer.ratan.polarization_type import PolarizationType
 from ratan_600_data_analyzer.ratan.ratan_observation import RatanObservation
 from ratan_600_data_analyzer.ratan.ratan_observation_reader import RatanObservationReader
 
 
 class FastAcquisition1To3GHzBinReader(RatanObservationReader):
 
-    def can_read(self, bin_file: Path):
-        # todo
-        if not bin_file.suffix.lower() == '.bin':
+    def can_read(self, file: Path):
+
+        extensions = file.suffixes
+
+        if extensions == ['.bin', '.gz']:
+            return True
+        elif extensions == ['.bin']:
+            return True
+        else:
             return False
-        # try:
-        #
-        # except Exception:
-        #     return False
-        return True
 
     def read(self, bin_file: Path) -> RatanObservation:
 
@@ -40,88 +47,70 @@ class FastAcquisition1To3GHzBinReader(RatanObservationReader):
             p0
             p1
         """
-
-        # figure
-        matplotlib.use('TkAgg')  # 'Qt5Agg', 'WxAgg'
-
-        c0p0_data, c0p1_data, c1p0_data, c1p1_data, \
-            c0p0_kurtosis, c0p1_kurtosis, c1p0_kurtosis, c1p1_kurtosis, \
-            c0p0_state, c0p1_state, c1p0_state, c1p1_state = self._get_data_from_file(bin_file)
-
-        # window
-        plt.figure()
-        plt.plot(c0p0_data, marker='o',
-                 markersize=1,
-                 markerfacecolor='none')
-        plt.show()
+        pol_chan_data, kurtosis_data, gen_state_data = self._get_data_from_file(bin_file)
 
         """
-            Последнее место, где используется куртозис. Если он понадобится дальше, нужно дописать класс соответствующим
-            образом (свойства, выбор значений для работы и т.п.)
+            Missing values = 2
         """
-        c0p0_data[c0p0_kurtosis <= KURT_THRESHOLD] = np.nan
-        c0p1_data[c0p1_kurtosis <= KURT_THRESHOLD] = np.nan
-        c1p0_data[c1p0_kurtosis <= KURT_THRESHOLD] = np.nan
-        c1p1_data[c1p1_kurtosis <= KURT_THRESHOLD] = np.nan
+        # pol_chan_data.c0p0_data = np.nan_to_num(pol_chan_data.c0p0_data, nan=replacement_value)
+        # pol_chan_data.c0p1_data = np.nan_to_num(pol_chan_data.c0p1_data, nan=replacement_value)
+        # pol_chan_data.c1p0_data = np.nan_to_num(pol_chan_data.c1p0_data, nan=replacement_value)
+        # pol_chan_data.c1p1_data = np.nan_to_num(pol_chan_data.c1p1_data, nan=replacement_value)
+        pol_chan_data.c0p0_data[pol_chan_data.c0p0_data == 0] = config.raw_missing_value_replacement
+        pol_chan_data.c0p1_data[pol_chan_data.c0p1_data == 0] = config.raw_missing_value_replacement
+        pol_chan_data.c1p0_data[pol_chan_data.c1p0_data == 0] = config.raw_missing_value_replacement
+        pol_chan_data.c1p1_data[pol_chan_data.c1p1_data == 0] = config.raw_missing_value_replacement
 
+        joined_channels_0 = np.hstack((np.fliplr(pol_chan_data.c0p0_data), pol_chan_data.c1p0_data)).T  # 1-3 GHz pol0
+        joined_channels_1 = np.hstack((np.fliplr(pol_chan_data.c0p1_data), pol_chan_data.c1p1_data)).T  # 1-3 GHz pol1
 
+        fast_acq_raw_data = FastAcquisition1To3GHzRawData()
+        fast_acq_raw_data.polarization_channels_data = pol_chan_data
+        fast_acq_raw_data.kurtosis_data = kurtosis_data
+        fast_acq_raw_data.generator_state_data = gen_state_data
 
-        """
-            replace_nan заполняет nan значениями, полученными линейной интерполяцией между крайними значениями соседних
-            промежутков. В fast_input есть функция replace_nan_interp, которая вычисляет средние по соседним промежуткам
-            и интерполирует между этими средними, что кажется более корректным; кроме того, она может добавлять к
-            интерполированным значениям гауссовский шум с мощностью, равной среднему арифметическому мощности шума в
-            соседних промежутках. Естественно, все это работает гораздо медленнее.
-        """
-        ch0_pol0 = fast_input.replace_nan(c0p0_data)
-        ch0_pol1 = fast_input.replace_nan(c0p1_data)
-        ch1_pol0 = fast_input.replace_nan(c1p0_data)
-        ch1_pol1 = fast_input.replace_nan(c1p1_data)
+        polarization_to_attribute = {
+            PolarizationType.LHCP.value: 'lhcp',
+            PolarizationType.RHCP.value: 'rhcp'
+        }
+        channel_mapping = {
+            'pol_channel0': polarization_to_attribute[config.pol_ch0],
+            'pol_channel1': polarization_to_attribute[config.pol_ch1],
+        }
 
-
-
-        joined_channels_0 = np.hstack((np.fliplr(ch0_pol0), ch1_pol0)).T  # 1-3 GHz pol0
-        joined_channels_1 = np.hstack((np.fliplr(ch0_pol1), ch1_pol1)).T  # 1-3 GHz pol1
-
-        pol0_data = self._trim_polarization_array(joined_channels_0)
-        pol1_data = self._trim_polarization_array(joined_channels_1)
-
-        array_3d = np.stack([pol0_data, pol1_data], axis=1)
-
-        desc_file = bin_file.with_suffix(".desc")
-        fast_acq_metadata = FastAcquisition1To3GHzMetadataBinLoader.load(desc_file, bin_file, array_3d)
-        fast_acq_data = FastAcquisition1To3GHzData(array_3d)
-        observation = FastAcquisition1To3GHzObservation(fast_acq_metadata, fast_acq_data)
-
+        fast_acq_data = FastAcquisition1To3GHzData(channel_mapping)
+        fast_acq_data.pol_channel0 = joined_channels_0
+        fast_acq_data.pol_channel1 = joined_channels_1
+        fast_acq_metadata = FastAcquisition1To3GHzMetadataBinLoader.load(bin_file, fast_acq_data=fast_acq_data, fast_acq_raw_data=fast_acq_raw_data)
+        observation = FastAcquisition1To3GHzObservation(metadata=fast_acq_metadata, data=fast_acq_data, raw_data=fast_acq_raw_data)
         return observation
 
     def read_metadata(self, file_path: Path) -> Observation:
         pass
 
-    # todo
-    # .gz
-    def _get_data_from_file(self, file, remove_spikes=True):
+    def _get_data_from_file(self, file: Path, remove_spikes=True):
 
-        # Если файл - архив, распаковываен и читаем данные в соответствии с форматом fast_input.dt;
-        # если не архив, просто читаем
+        """
+            Если файл - архив, распаковываен и читаем данные в соответствии с форматом fast_input.dt;
+            если не архив, просто читаем
+        """
 
-        # if file_name.endswith(".gz"):
-        #     try:
-        #         with gzip.open(file_name) as f:
-        #             block_array = np.frombuffer(f.read(), dtype=fast_input.dt)
-        #     except Exception as e:
-        #         logging.warning(f"get_data_from_file(): {e}")
-        # else:
-        #     try:
-        #         block_array = np.fromfile(file_name, dtype=fast_input.dt)
-        #     except Exception as e:
-        #         logging.warning(f"get_data_from_file(): {e}")
+        file_name = file.name
+        extensions = file.suffixes
 
-        # Если что-то прочиталось, заполняем им свойства модели
-        #if block_array is not None:
-        #    self.read_data(block_array=block_array, remove_spikes=remove_spikes)
-
-        block_array = np.fromfile(file, dtype=dt)
+        if extensions == ['.bin', '.gz']:
+            try:
+                with gzip.open(file) as f:
+                    block_array = np.frombuffer(f.read(), dtype=fast_input.dt)
+            except Exception as e:
+                raise RuntimeError(f"_get_data_from_file(): {e}") from e
+        elif extensions == ['.bin']:
+            try:
+                block_array = np.fromfile(file, dtype=fast_input.dt)
+            except Exception as e:
+                raise RuntimeError(f"_get_data_from_file(): {e}") from e
+        else:
+            raise ValueError(f"Unsupported file type: '{file_name}'.")
 
         return self._get_data(block_array, remove_spikes=True)
 
@@ -143,18 +132,32 @@ class FastAcquisition1To3GHzBinReader(RatanObservationReader):
                 chan1_pol0, chan1_pol1 \
                     = self._remove_spikes_from_polarization_arrays(chan1_pol0[:chan1_length], chan1_pol1[:chan1_length])
 
+
         c0p0_data, c0p0_kurtosis, c0p0_state = self._get_data_and_kurtosis(chan0_pol0, spectrum_length)
         c0p1_data, c0p1_kurtosis, c0p1_state = self._get_data_and_kurtosis(chan0_pol1, spectrum_length)
         c1p0_data, c1p0_kurtosis, c1p0_state = self._get_data_and_kurtosis(chan1_pol0, spectrum_length)
         c1p1_data, c1p1_kurtosis, c1p1_state = self._get_data_and_kurtosis(chan1_pol1, spectrum_length)
 
-        return c0p0_data, c0p1_data, c1p0_data, c1p1_data, \
-            c0p0_kurtosis, c0p1_kurtosis, c1p0_kurtosis, c1p1_kurtosis, \
-            c0p0_state, c0p1_state, c1p0_state, c1p1_state
+        pol_chan_data = PolarizationChannelsData(_c0p0_data=c0p0_data,
+                                                 _c0p1_data=c0p1_data,
+                                                 _c1p0_data=c1p0_data,
+                                                 _c1p1_data=c1p1_data)
+
+        kurtosis_data = KurtosisData(_c0p0_kurt=c0p0_kurtosis,
+                                     _c0p1_kurt=c0p1_kurtosis,
+                                     _c1p0_kurt=c1p0_kurtosis,
+                                     _c1p1_kurt=c1p1_kurtosis)
+
+        gen_state_data = GeneratorStateData(_c0p0_state=c0p0_state,
+                                       _c0p1_state=c0p1_state,
+                                       _c1p0_state=c1p0_state,
+                                       _c1p1_state=c1p1_state)
+
+        return pol_chan_data, kurtosis_data, gen_state_data
 
     def _get_polarization_arrays(self, raw_array, channel):
         def _align_to_chunk_length(length):
-            return ((length + 1) // CHUNK_LENGTH) * CHUNK_LENGTH
+            return ((length + 1) // config.chunk_length) * config.chunk_length
 
         # Select elements of the channel
         if channel == 0:
@@ -165,8 +168,8 @@ class FastAcquisition1To3GHzBinReader(RatanObservationReader):
             raise ValueError(f'Bad channel number: {channel}. Must be 0 or 1.')
 
         # Separate two polarizations
-        p0 = a[(a['state'] & POLARIZATION_MASK) == 0]
-        p1 = a[(a['state'] & POLARIZATION_MASK) != 0]
+        p0 = a[(a['state'] & config.polarization_mask) == 0]
+        p1 = a[(a['state'] & config.polarization_mask) != 0]
 
         # Find max frame numbers
         p0_maxindex = p0['cnt'].max() if p0.size > 0 else 0
@@ -180,9 +183,9 @@ class FastAcquisition1To3GHzBinReader(RatanObservationReader):
 
         # Construct zero arrays to accomodate the full data in the case when there are no missing values
         # and fill them with the available data
-        r_p0 = np.zeros(p0_length, dtype=dt)
+        r_p0 = np.zeros(p0_length, dtype=config.dt)
         r_p0[p0['cnt']] = p0
-        r_p1 = np.zeros(p1_length, dtype=dt)
+        r_p1 = np.zeros(p1_length, dtype=config.dt)
         r_p1[p1['cnt']] = p1
 
         return r_p0, r_p1
@@ -201,19 +204,3 @@ class FastAcquisition1To3GHzBinReader(RatanObservationReader):
         a[idx_b] = 0
         b[idx_a] = 0
         return a, b
-
-    def _trim_polarization_array(self, pol_array: np.array):
-        # Приводит массив к размеру, кратному self.time_reduction_factor, усредняет его по времени и заменяет
-        # возможные nan интерполированными значениями
-
-        n_bands, n_points = np.shape(pol_array)
-        pol_array = pol_array[:, :(n_points // TIME_REDUCTION_FACTOR) * TIME_REDUCTION_FACTOR]
-        try:
-            pol_array = pol_array.reshape(n_bands, n_points // TIME_REDUCTION_FACTOR, -1)
-            with warnings.catch_warnings():
-                warnings.filterwarnings(action='ignore', message='Mean of empty slice')
-                pol_array = np.nanmean(pol_array, axis=2)
-            pol_array = fast_input.replace_nan(pol_array)
-        except ValueError:
-            pol_array = None
-        return pol_array

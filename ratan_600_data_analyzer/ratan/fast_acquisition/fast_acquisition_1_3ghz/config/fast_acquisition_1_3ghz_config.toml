@@ -1,0 +1,58 @@
+
+
+[channels]
+pol_ch0 = "LHCP"
+pol_ch1 = "RHCP"
+
+[bin_data]
+chunk_length = 0x80
+polarization_mask = 0b00000000000010000000000000000000
+
+dt = [
+ ['cnt', '<u4'],
+ ['avg_kurt', '<u4'],
+ ['state', '<u4'],
+ ['channel', '<u4'],
+ ['data', '<u8', 0x80]
+]
+
+[adc]
+#SAMPLES_PER_SECOND = 2_000_000_000 / 16384 / 1024
+clock = 2_000_000_000 #Hz
+factor1 = 16384
+factor2 = 1024
+
+kurt_threshold = 224
+generator_bit = 20
+
+switch_polarization_frequency = 4 # Hz Частота переключения поляризации
+
+freq_min = 1000
+freq_max = 3000
+
+obs_time_delay = 1000
+
+[value_replacement]
+raw_missing_value_replacement = 2
+raw_kurtosis_value_replacement = 1
+calibr_missing_value_replacement = 0.02
+calibr_kurtosis_value_replacement = 0.01
+
+[ratan]
+latitude = { d = 43, m = 49, s = 52.75, unit = "deg" }
+longitude = { d = 41, m = 35, s = 31.5, unit = "deg" }
+height = { value = 970, unit = "m" } # Высота над уровнем моря
+
+[calibration]
+flux_dm_file = 'ratan/fast_acquisition/fast_acquisition_1_3ghz/data/flux_dm.dat'
+arcsec_min = -1500
+arcsec_max = 1500
+
+[filtration]
+filter_bands = [
+    [1716, 2045],
+    [2099, 2213],
+    [2409, 2702],
+    [2960, 3000]
+]
+

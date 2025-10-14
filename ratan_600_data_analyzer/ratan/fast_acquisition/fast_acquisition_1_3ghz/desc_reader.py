@@ -1,7 +1,6 @@
 import json
 import re
 from pathlib import Path
-from typing import Dict, Any
 
 from ratan_600_data_analyzer.ratan.fast_acquisition.fast_acquisition_1_3ghz.json_data import JSONData
 
@@ -24,7 +23,7 @@ class DescReader:
                 return JSONData(json_data)
 
         except FileNotFoundError:
-            raise RuntimeError(f"File not found: {self._desc_file}")
+            raise RuntimeError(f"File not found: {desc_file}")
         except json.JSONDecodeError as e:
             raise RuntimeError(f"Invalid JSON format: {str(e)}")
 
@@ -32,7 +31,10 @@ class DescReader:
         """
             Исправление неправильного формата json
             False -> false
+            ' -> "
         """
         line = re.sub(r'\bTrue\b', 'true', line, flags=re.IGNORECASE)
         line = re.sub(r'\bFalse\b', 'false', line, flags=re.IGNORECASE)
+
+        line = line.replace("'", '"')
         return line

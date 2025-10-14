@@ -189,25 +189,25 @@ class RatanObservationMetadata(ObservationMetadata, ABC):
     def datetime_reg_stop_utc(self, value: datetime):
         pass
 
-    @property
-    @abstractmethod
-    def datetime_culmination_utc(self) -> datetime:
-        pass
-
-    @datetime_culmination_utc.setter
-    @abstractmethod
-    def datetime_culmination_utc(self, value: datetime):
-        pass
-
-    @property
-    @abstractmethod
-    def datetime_culmination_local(self) -> datetime:
-        pass
-
-    @datetime_culmination_local.setter
-    @abstractmethod
-    def datetime_culmination_local(self, value: datetime):
-        pass
+    # @property
+    # @abstractmethod
+    # def datetime_culmination_utc(self) -> datetime:
+    #     pass
+    #
+    # @datetime_culmination_utc.setter
+    # @abstractmethod
+    # def datetime_culmination_utc(self, value: datetime):
+    #     pass
+    #
+    # @property
+    # @abstractmethod
+    # def datetime_culmination_local(self) -> datetime:
+    #     pass
+    #
+    # @datetime_culmination_local.setter
+    # @abstractmethod
+    # def datetime_culmination_local(self, value: datetime):
+    #     pass
 
     @property
     @abstractmethod
@@ -217,16 +217,6 @@ class RatanObservationMetadata(ObservationMetadata, ABC):
     @cdelt1.setter
     @abstractmethod
     def cdelt1(self, value: float):
-        pass
-
-    @property
-    @abstractmethod
-    def data_layout(self) -> DataLayout:
-        pass
-
-    @data_layout.setter
-    @abstractmethod
-    def data_layout(self, value: DataLayout):
         pass
 
     @property
