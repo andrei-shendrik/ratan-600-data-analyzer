@@ -1,8 +1,6 @@
 import copy
 
-import matplotlib
 import numpy as np
-from matplotlib import pyplot as plt
 
 from ratan_600_data_analyzer.ratan.fast_acquisition.fast_acquisition_1_3ghz.fast_acquisition_1_3ghz_calibration_coefficients import \
     FastAcquisitionCalibrationCoefficients
@@ -78,11 +76,41 @@ class FastAcquisition1To3GHzCalibratorLebedev(FastAcquisition1To3GHzCalibrator):
 
         # Арксекунды развернуты
         suggested_qsp_idx = np.argmin(avg_scan)
-        suggested_qsp = x_scale[suggested_qsp_idx]
+        suggested_qsp_coord = x_scale[suggested_qsp_idx]
 
-        qsp = suggested_qsp
-        qsp_idx = np.argmin(np.abs(arcsec_axis - qsp))
+        # lhcp
+        arr_lhcp = copy.deepcopy(lhcp[:,idx])
+        arr_lhcp = arr_lhcp[:, idx_x_max:idx_x_min]
+        avg_scan_lhcp = np.nansum(arr_lhcp, axis=0)
+        lhcp_not_nan_indices = np.where(avg_scan_lhcp != 0)[0]
+        lhcp_not_nan_arcsec = x_scale[lhcp_not_nan_indices]
+
+        #qsp_lhcp = suggested_qsp
+        #qsp_lhcp_idx = np.argmin(np.abs(arcsec_axis - qsp_lhcp))
         #print(f"QSP {suggested_qsp}")
+
+        # rhcp
+        arr_rhcp = copy.deepcopy(rhcp[:, idx])
+        arr_rhcp = arr_rhcp[:, idx_x_max:idx_x_min]
+        avg_scan_rhcp = np.nansum(arr_rhcp, axis=0)
+        rhcp_not_nan_indices = np.where(avg_scan_rhcp != 0)[0]
+        rhcp_not_nan_arcsec = x_scale[rhcp_not_nan_indices]
+
+        all_not_nan_coords = np.concatenate([lhcp_not_nan_arcsec, rhcp_not_nan_arcsec])
+        distances_to_target = np.abs(all_not_nan_coords - suggested_qsp_coord)
+        best_overall_coord = all_not_nan_coords[np.argmin(distances_to_target)]
+
+        if best_overall_coord in lhcp_not_nan_arcsec:
+            qsp_coord_lhcp = best_overall_coord
+            distances_to_anchor = np.abs(rhcp_not_nan_arcsec - qsp_coord_lhcp)
+            qsp_coord_rhcp = rhcp_not_nan_arcsec[np.argmin(distances_to_anchor)]
+        else:
+            qsp_coord_rhcp = best_overall_coord
+            distances_to_anchor = np.abs(lhcp_not_nan_arcsec - qsp_coord_rhcp)
+            qsp_coord_lhcp = lhcp_not_nan_arcsec[np.argmin(distances_to_anchor)]
+
+        qsp_lhcp_idx = np.argmin(np.abs(arcsec_axis - qsp_coord_lhcp))
+        qsp_rhcp_idx = np.argmin(np.abs(arcsec_axis - qsp_coord_rhcp))
 
         flux_dm_file = config.flux_dm_file
         freqs_dm, flux_dm = np.loadtxt(
@@ -95,18 +123,18 @@ class FastAcquisition1To3GHzCalibratorLebedev(FastAcquisition1To3GHzCalibrator):
         #fp = FLUX_DM
         fp = flux_dm
         # Интерполяция здесь нужна, поскольку таблица значений потоков FLUX_DM есть только для одной сетки частот,
-        # которая может отличаться от использованной в наблюдении - все зависит от усреденения по частотам
+        # которая может отличаться от использованной в наблюдении - все зависит от усреднения по частотам
         freq_min = frequency_axis[0]
         freq_max = frequency_axis[-1]
         xp = np.linspace(freq_min, freq_max, fp.shape[0])
         interp_flux = np.interp(frequency_axis, xp, fp)
-        cal_coeffs0 = interp_flux / lhcp[:, qsp_idx]
+        cal_coeffs0 = interp_flux / lhcp[:, qsp_lhcp_idx]
         pol0_calibrated = (lhcp.T * cal_coeffs0).T
         for el in config.filter_bands:
             idx = (frequency_axis >= el[0]) & (frequency_axis <= el[1])
             pol0_calibrated[idx] = 0
 
-        cal_coeffs1 = interp_flux / rhcp[:, qsp_idx]
+        cal_coeffs1 = interp_flux / rhcp[:, qsp_rhcp_idx]
         pol1_calibrated = (rhcp.T * cal_coeffs1).T
         for el in config.filter_bands:
             idx = (frequency_axis >= el[0]) & (frequency_axis <= el[1])
@@ -123,7 +151,7 @@ class FastAcquisition1To3GHzCalibratorLebedev(FastAcquisition1To3GHzCalibrator):
         self._observation.data.pol_channel1 = pol1_calibrated
 
         metadata.is_calibrated = True
-        metadata._quiet_sun_point_arcsec = qsp.value
+        metadata._quiet_sun_point_arcsec = suggested_qsp_coord.value
         metadata._unit = "s.f.u."
 
         polarization_to_attribute = {

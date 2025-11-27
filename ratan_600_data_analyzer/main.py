@@ -18,7 +18,7 @@ from ratan_600_data_analyzer.ratan.fast_acquisition.fast_acquisition_1_3ghz.fast
 from ratan_600_data_analyzer.ratan.polarization_type import PolarizationType
 from ratan_600_data_analyzer.ratan.ratan_builder_factory import RatanBuilderFactory
 
-FITS_OUTPUT_PATH = Path(r"D:\data\astro\ratan-600\fast_acquisition\1-3ghz\fits")
+FITS_OUTPUT_PATH = Path(r"D:\data\astro\ratan-600\fast-acquisition-1-3ghz\fits\sun")
 
 def time_counter(func):
     def wrapper(*args, **kwargs):
@@ -37,21 +37,20 @@ def process_observations():
     data_loader
     """
 
-    # fast_acquisition_bin_file = Path(
-    #     r"D:\data\astro\ratan-600\fast_acquisition\1-3ghz\bin\2024\08\2024-08-01_121957_sun+00.bin.gz")
-
     fast_acquisition_bin_file = Path(
-        r"D:\data\astro\ratan-600\fast_acquisition\1-3ghz\bin\2025\09\2025-09-01_121336_sun+00.bin.gz")
-
+        r"D:\data\astro\ratan-600\fast-acquisition-1-3ghz\raw\sun\2024\08\2024-08-01_121957_sun+00.bin.gz")
 
     # fast_acquisition_bin_file = Path(
-    #          r"D:\data\astro\ratan-600\fast_acquisition\1-3ghz\2025\03\2025-03-21_122043_Sun+00.bin.gz")
+    #     r"D:\data\astro\ratan-600\fast-acquisition-1-3ghz\raw\sun\2025\09\2025-09-01_121336_sun+00.bin.gz")
 
-    # fast_acq_fits_file = Path(
-    #     r"D:\data\astro\ratan-600\fast_acquisition\1-3ghz\fits\2024\08\2024-08-01_121957_sun+00.fits")
+    # без солнца
+    # fast_acquisition_bin_file = Path(
+    #          r"D:\data\astro\ratan-600\fast-acquisition-1-3ghz\raw\sun\2025\03\2025-03-21_122043_sun+00.bin.gz")
 
-    output_fits_file = process_fast_acquisition(fast_acquisition_bin_file, FITS_OUTPUT_PATH)
-    #read_fits(output_fits_file)
+    #output_fits_file = process_fast_acquisition(fast_acquisition_bin_file, FITS_OUTPUT_PATH)
+
+    fits_file = Path(r"D:\data\astro\ratan-600\fast-acquisition-1-3ghz\fits\sun\2025\09\2025-09-01_121336_sun+00.fits")
+    read_fits(fits_file)
 
 @time_counter
 def process_fast_acquisition(fast_acquisition_bin_file: Path, fits_output_path: Path) -> Path:
@@ -94,6 +93,7 @@ def process_fast_acquisition(fast_acquisition_bin_file: Path, fits_output_path: 
             output_fits_file = _get_output_fits_filename(observation, fits_output_path)
             writer = FastAcquisition1To3GHzFitsWriter(observation)
             writer.write(output_fits_file, overwrite=overwrite)
+            print(f"Written to {output_fits_file}")
 
             lhcp = observation.data.lhcp
             rhcp = observation.data.rhcp
@@ -333,7 +333,8 @@ def read_fits(fits_file: Path):
     if 'cal_p0' in table_hdu.columns.names:
         calibr_coeff_p0 = table_data['cal_p0']
         calibr_coeff_p1 = table_data['cal_p1']
-        print(f"Calibration coefficients: {calibr_coeff_p0}")
+        # print(f"Calibration coefficients: {calibr_coeff_p0}")
+        # print(f"Calibration coefficients: {calibr_coeff_p1}")
 
     num_frequencies = header['NFREQS']
     num_samples = header['NSAMPLES']
@@ -350,9 +351,13 @@ def read_fits(fits_file: Path):
     time_axis = np.arange(num_samples) / config.samples_per_second
     arcsec_axis = - (time_axis - ref_time) * arcsec_per_second
 
-    pol = 0
+    polarization = 0
+    if polarization == 0:
+        pol = "LHCP"
+    if polarization == 1:
+        pol = "RHCP"
 
-    data = data_array[:,pol,:]
+    data = data_array[:,polarization,:]
 
     matplotlib.use('TkAgg')  # 'Qt5Agg', 'WxAgg'
     fig, ax = plt.subplots()
@@ -362,11 +367,10 @@ def read_fits(fits_file: Path):
                           cmap='Spectral_r')
     ax.set_xlabel('x, arcsec')
     ax.set_ylabel('Frequency, MHz')
-    ax.set_title(f"{datatime_str} Az {az}\nSpectrogram LHCP")
+    ax.set_title(f"{datatime_str} Az {az}\nSpectrogram {pol}")
     fig.colorbar(contour, ax=ax, label='s.f.u.')
     #plt.show()
 
-    polarization = 0
     #data_array[data_array == 2] = np.nan
     #data_array[data_array == 1] = np.nan
 
@@ -382,7 +386,7 @@ def read_fits(fits_file: Path):
     plt.grid(alpha=0.3)
     plt.xlabel('x, arcsec')
     plt.ylabel('flux, s.f.u.')
-    plt.title(f"{datatime_str} Az {az}\nLHCP")
+    plt.title(f"{datatime_str} Az {az}\n{pol}")
     plt.tight_layout()
     plt.show()
     return data_array

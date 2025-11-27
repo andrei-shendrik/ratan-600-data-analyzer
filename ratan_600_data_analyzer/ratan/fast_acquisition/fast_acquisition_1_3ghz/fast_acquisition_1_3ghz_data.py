@@ -65,3 +65,7 @@ class FastAcquisition1To3GHzData(RatanObservationData):
     def pol_channel1(self, array: np.ndarray):
         target_attr = self._channel_mapping['pol_channel1']
         setattr(self, target_attr, array)
+
+    @property
+    def channel_mapping(self):
+        return self._channel_mapping

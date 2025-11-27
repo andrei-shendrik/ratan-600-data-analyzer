@@ -1,4 +1,5 @@
 import gzip
+import sys
 from pathlib import Path
 
 import numpy as np
@@ -81,6 +82,7 @@ class FastAcquisition1To3GHzBinReader(RatanObservationReader):
         fast_acq_data = FastAcquisition1To3GHzData(channel_mapping)
         fast_acq_data.pol_channel0 = joined_channels_0
         fast_acq_data.pol_channel1 = joined_channels_1
+
         fast_acq_metadata = FastAcquisition1To3GHzMetadataBinLoader.load(bin_file, fast_acq_data=fast_acq_data, fast_acq_raw_data=fast_acq_raw_data)
         observation = FastAcquisition1To3GHzObservation(metadata=fast_acq_metadata, data=fast_acq_data, raw_data=fast_acq_raw_data)
         return observation
