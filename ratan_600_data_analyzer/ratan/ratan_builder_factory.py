@@ -12,13 +12,13 @@ class RatanBuilderFactory:
 
     @staticmethod
     def create_builder(file: Path) -> Union[FastAcquisition1To3GHzBuilder, SSPCBuilder]:
-        # todo
-        # временно, переделать
-        if file.suffix.lower() == '.bin':
+
+        extensions = file.suffixes
+        if (extensions == ['.bin', '.gz']) or (extensions == ['.bin']):
             builder = FastAcquisition1To3GHzBuilder(file)
             builder.receiver = DataReceiver.FAST_ACQUISITION_1_3GHZ
             return builder
-        if file.suffix.lower() == '.fits':
+        if extensions == '.fits':
             builder = SSPCBuilder(file)
             builder.receiver = DataReceiver.SSPC
             return builder
