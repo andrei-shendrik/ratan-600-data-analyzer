@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from ratan_600_data_analyzer.main import _get_output_fits_filename
+from apps.analyzer.main import _get_output_fits_filename
 from ratan_600_data_analyzer.ratan.fast_acquisition.fast_acquisition_1_3ghz.fast_acquisition_1_3ghz_fits_writer import \
     FastAcquisition1To3GHzFitsWriter
 from ratan_600_data_analyzer.ratan.fast_acquisition.fast_acquisition_1_3ghz.fast_acquisition_1_3ghz_observation import \

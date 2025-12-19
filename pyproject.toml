@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ratan-600-data-analyzer"
-version = "0.3.3"
-requires-python = ">= 3.8"
+version = "0.3.5"
+requires-python = ">= 3.9"
 readme = "README.md"
 description = ""
 authors = [
@@ -13,9 +13,19 @@ authors = [
 ]
 
 dependencies = [
-    "toml", # Python < 3.11
-    "watchdog"
+    "astropy",
+    "colorama",
+    "matplotlib",
+    "numpy",
+    "pandas",
+    "Pillow",
+    "plotly",
+    "sunpy"
+    # "watchdog"
 ]
+
+[project.optional-dependencies]
+bin2fits_fast_acqusition_1_3ghz = []
 
 [project.scripts]
 bin_to_fits_fast_acqusition_1_3ghz = "apps.bin_to_fits_fast_acqusition_1_3ghz.main:main"
@@ -26,5 +36,4 @@ ratan_600_data_analyzer = [
     "ratan/fast_acquisition/fast_acquisition_1_3ghz/data/*.dat"
 ]
 
-[project.optional-dependencies]
-bin2fits_fast_acqusition_1_3ghz = []
+
