@@ -2,7 +2,7 @@ import argparse
 import sys
 from pathlib import Path
 
-from apps.bin2fits_fast_acquisition_1_3ghz.bin2fits_fast_acqusition_1_3ghz_app import Bin2FitsFastAcquisitionApp
+from apps.bin2fits_fast_acquisition_1_3ghz.bin2fits_fast_acquisition_1_3ghz_app import Bin2FitsFastAcquisitionApp
 from apps.bin2fits_fast_acquisition_1_3ghz.infrastructure.database import init_db
 from apps.bin2fits_fast_acquisition_1_3ghz.scripts.check_db import check_db
 from apps.bin2fits_fast_acquisition_1_3ghz.settings.bin2fits_fast_acquisition_1_3ghz_settings import \
