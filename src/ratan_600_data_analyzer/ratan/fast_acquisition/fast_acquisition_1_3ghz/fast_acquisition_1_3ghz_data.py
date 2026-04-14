@@ -1,7 +1,7 @@
 import copy
 
 import numpy as np
-from src.ratan_600_data_analyzer.ratan.ratan_observation_data import RatanObservationData
+from ratan_600_data_analyzer.ratan.ratan_observation_data import RatanObservationData
 
 
 class FastAcquisition1To3GHzData(RatanObservationData):

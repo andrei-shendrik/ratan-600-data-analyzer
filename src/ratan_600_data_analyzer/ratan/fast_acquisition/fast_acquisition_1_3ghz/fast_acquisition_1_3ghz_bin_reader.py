@@ -3,26 +3,26 @@ from pathlib import Path
 
 import numpy as np
 
-from src.ratan_600_data_analyzer.observation.observation import Observation
-from src.ratan_600_data_analyzer.ratan.fast_acquisition.fast_acquisition_1_3ghz import fast_input
-from src.ratan_600_data_analyzer.ratan.fast_acquisition.fast_acquisition_1_3ghz.fast_acquisition_1_3ghz_configuration import \
+from ratan_600_data_analyzer.observation.observation import Observation
+from ratan_600_data_analyzer.ratan.fast_acquisition.fast_acquisition_1_3ghz import fast_input
+from ratan_600_data_analyzer.ratan.fast_acquisition.fast_acquisition_1_3ghz.fast_acquisition_1_3ghz_configuration import \
     config
-from src.ratan_600_data_analyzer.ratan.fast_acquisition.fast_acquisition_1_3ghz.fast_acquisition_1_3ghz_data import \
+from ratan_600_data_analyzer.ratan.fast_acquisition.fast_acquisition_1_3ghz.fast_acquisition_1_3ghz_data import \
     FastAcquisition1To3GHzData
-from src.ratan_600_data_analyzer.ratan.fast_acquisition.fast_acquisition_1_3ghz.fast_acquisition_1_3ghz_metadata_bin_loader import \
+from ratan_600_data_analyzer.ratan.fast_acquisition.fast_acquisition_1_3ghz.fast_acquisition_1_3ghz_metadata_bin_loader import \
     FastAcquisition1To3GHzMetadataBinLoader
-from src.ratan_600_data_analyzer.ratan.fast_acquisition.fast_acquisition_1_3ghz.fast_acquisition_1_3ghz_observation import \
+from ratan_600_data_analyzer.ratan.fast_acquisition.fast_acquisition_1_3ghz.fast_acquisition_1_3ghz_observation import \
     FastAcquisition1To3GHzObservation
-from src.ratan_600_data_analyzer.ratan.fast_acquisition.fast_acquisition_1_3ghz.raw_data.fast_acquisition_1_3ghz_raw_data import \
+from ratan_600_data_analyzer.ratan.fast_acquisition.fast_acquisition_1_3ghz.raw_data.fast_acquisition_1_3ghz_raw_data import \
     FastAcquisition1To3GHzRawData
-from src.ratan_600_data_analyzer.ratan.fast_acquisition.fast_acquisition_1_3ghz.raw_data.generator_state_data import \
+from ratan_600_data_analyzer.ratan.fast_acquisition.fast_acquisition_1_3ghz.raw_data.generator_state_data import \
     GeneratorStateData
-from src.ratan_600_data_analyzer.ratan.fast_acquisition.fast_acquisition_1_3ghz.raw_data.kurtosis_data import KurtosisData
-from src.ratan_600_data_analyzer.ratan.fast_acquisition.fast_acquisition_1_3ghz.raw_data.polarization_channels_data import \
+from ratan_600_data_analyzer.ratan.fast_acquisition.fast_acquisition_1_3ghz.raw_data.kurtosis_data import KurtosisData
+from ratan_600_data_analyzer.ratan.fast_acquisition.fast_acquisition_1_3ghz.raw_data.polarization_channels_data import \
     PolarizationChannelsData
-from src.ratan_600_data_analyzer.ratan.polarization_type import PolarizationType
-from src.ratan_600_data_analyzer.ratan.ratan_observation import RatanObservation
-from src.ratan_600_data_analyzer.ratan.ratan_observation_reader import RatanObservationReader
+from ratan_600_data_analyzer.ratan.polarization_type import PolarizationType
+from ratan_600_data_analyzer.ratan.ratan_observation import RatanObservation
+from ratan_600_data_analyzer.ratan.ratan_observation_reader import RatanObservationReader
 
 
 class FastAcquisition1To3GHzBinReader(RatanObservationReader):

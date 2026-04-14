@@ -1,9 +1,9 @@
 from typing import List, Type
 
-from src.ratan_600_data_analyzer.ratan.fast_acquisition.fast_acquisition_1_3ghz.fast_acquisition_1_3ghz_fits_writer import \
+from ratan_600_data_analyzer.ratan.fast_acquisition.fast_acquisition_1_3ghz.fast_acquisition_1_3ghz_fits_writer import \
     FastAcquisition1To3GHzFitsWriter
-from src.ratan_600_data_analyzer.ratan.ratan_observation import RatanObservation
-from src.ratan_600_data_analyzer.ratan.ratan_observation_writer import RatanObservationWriter
+from ratan_600_data_analyzer.ratan.ratan_observation import RatanObservation
+from ratan_600_data_analyzer.ratan.ratan_observation_writer import RatanObservationWriter
 
 
 class RatanWriterFactory:

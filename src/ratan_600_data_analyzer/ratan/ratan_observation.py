@@ -1,7 +1,7 @@
 from abc import abstractmethod, ABC
 
-from src.ratan_600_data_analyzer.observation.observation import Observation
-from src.ratan_600_data_analyzer.ratan.ratan_observation_data import RatanObservationData
+from ratan_600_data_analyzer.observation.observation import Observation
+from ratan_600_data_analyzer.ratan.ratan_observation_data import RatanObservationData
 
 
 class RatanObservation(Observation, ABC):

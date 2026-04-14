@@ -4,7 +4,7 @@ import uuid
 from sqlalchemy import Column, String, Enum, DateTime, Uuid, create_engine
 from sqlalchemy.orm import declarative_base
 from sqlalchemy.sql import func
-from src.ratan_600_data_analyzer.logging.logger_configurator import get_logger
+from ratan_600_data_analyzer.logging.logger_configurator import get_logger
 
 logger = get_logger(__name__)
 

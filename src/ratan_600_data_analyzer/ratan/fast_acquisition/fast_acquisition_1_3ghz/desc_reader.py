@@ -2,7 +2,7 @@ import json
 import re
 from pathlib import Path
 
-from src.ratan_600_data_analyzer.ratan.fast_acquisition.fast_acquisition_1_3ghz.json_data import JSONData
+from ratan_600_data_analyzer.ratan.fast_acquisition.fast_acquisition_1_3ghz.json_data import JSONData
 
 
 class DescReader:

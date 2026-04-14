@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from pathlib import Path
 
-from src.ratan_600_data_analyzer.observation.observation import Observation
+from ratan_600_data_analyzer.observation.observation import Observation
 
 
 class ObservationReader(ABC):

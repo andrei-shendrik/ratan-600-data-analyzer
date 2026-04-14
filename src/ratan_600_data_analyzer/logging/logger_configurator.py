@@ -2,7 +2,7 @@ import logging
 
 from colorama import Fore, Style
 
-from src.ratan_600_data_analyzer.logging.logging_settings import LoggingSettings
+from ratan_600_data_analyzer.logging.logging_settings import LoggingSettings
 
 class LoggerConfigurator:
     def __init__(self, settings: LoggingSettings):

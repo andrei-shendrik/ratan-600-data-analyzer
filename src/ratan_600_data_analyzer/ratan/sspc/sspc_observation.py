@@ -1,6 +1,6 @@
-from src.ratan_600_data_analyzer.ratan.ratan_observation import RatanObservation
-from src.ratan_600_data_analyzer.ratan.ratan_observation_data import RatanObservationData
-from src.ratan_600_data_analyzer.ratan.sspc.sspc_data import SSPCData
+from ratan_600_data_analyzer.ratan.ratan_observation import RatanObservation
+from ratan_600_data_analyzer.ratan.ratan_observation_data import RatanObservationData
+from ratan_600_data_analyzer.ratan.sspc.sspc_data import SSPCData
 
 
 class SSPCObservation(RatanObservation):

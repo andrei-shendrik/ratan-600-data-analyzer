@@ -6,15 +6,15 @@ from pathlib import Path
 
 import numpy as np
 
-from src.ratan_600_data_analyzer.ratan.data_receiver import DataReceiver
-from src.ratan_600_data_analyzer.ratan.fast_acquisition.fast_acquisition_1_3ghz import fast_input
-from src.ratan_600_data_analyzer.ratan.fast_acquisition.fast_acquisition_1_3ghz.fast_acquisition_1_3ghz_configuration import \
+from ratan_600_data_analyzer.ratan.data_receiver import DataReceiver
+from ratan_600_data_analyzer.ratan.fast_acquisition.fast_acquisition_1_3ghz import fast_input
+from ratan_600_data_analyzer.ratan.fast_acquisition.fast_acquisition_1_3ghz.fast_acquisition_1_3ghz_configuration import \
     config
-from src.ratan_600_data_analyzer.ratan.fast_acquisition.fast_acquisition_1_3ghz.fast_acquisition_1_3ghz_observation import \
+from ratan_600_data_analyzer.ratan.fast_acquisition.fast_acquisition_1_3ghz.fast_acquisition_1_3ghz_observation import \
     FastAcquisition1To3GHzObservation
-from src.ratan_600_data_analyzer.ratan.ratan_calibrator_factory import RatanCalibratorFactory
-from src.ratan_600_data_analyzer.ratan.ratan_observation_builder import RatanObservationBuilder
-from src.ratan_600_data_analyzer.ratan.ratan_reader_factory import RatanReaderFactory
+from ratan_600_data_analyzer.ratan.ratan_calibrator_factory import RatanCalibratorFactory
+from ratan_600_data_analyzer.ratan.ratan_observation_builder import RatanObservationBuilder
+from ratan_600_data_analyzer.ratan.ratan_reader_factory import RatanReaderFactory
 
 
 class FastAcquisition1To3GHzBuilder(RatanObservationBuilder):

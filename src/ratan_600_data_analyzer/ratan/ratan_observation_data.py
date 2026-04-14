@@ -2,7 +2,7 @@ from abc import abstractmethod, ABC
 
 import numpy as np
 
-from src.ratan_600_data_analyzer.observation.observation_data import ObservationData
+from ratan_600_data_analyzer.observation.observation_data import ObservationData
 
 
 class RatanObservationData(ObservationData, ABC):

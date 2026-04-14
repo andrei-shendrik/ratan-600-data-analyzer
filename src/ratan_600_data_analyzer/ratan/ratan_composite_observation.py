@@ -1,4 +1,4 @@
-from src.ratan_600_data_analyzer.ratan.ratan_observation import RatanObservation
+from ratan_600_data_analyzer.ratan.ratan_observation import RatanObservation
 
 
 class RatanCompositeObservation(RatanObservation):

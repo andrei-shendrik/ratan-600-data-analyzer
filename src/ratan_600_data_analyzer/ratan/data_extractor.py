@@ -1,8 +1,8 @@
 import numpy as np
 
-from src.ratan_600_data_analyzer.ratan.channel_data import ChannelData
-from src.ratan_600_data_analyzer.ratan.polarization_type import PolarizationType
-from src.ratan_600_data_analyzer.ratan.ratan_observation import RatanObservation
+from ratan_600_data_analyzer.ratan.channel_data import ChannelData
+from ratan_600_data_analyzer.ratan.polarization_type import PolarizationType
+from ratan_600_data_analyzer.ratan.ratan_observation import RatanObservation
 
 
 class DataExtractor:

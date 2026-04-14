@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-from src.ratan_600_data_analyzer.ratan.ratan_observation import RatanObservation
+from ratan_600_data_analyzer.ratan.ratan_observation import RatanObservation
 
 
 class RatanObservationCalibrator(ABC):

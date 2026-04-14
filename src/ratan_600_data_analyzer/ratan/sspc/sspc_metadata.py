@@ -1,5 +1,5 @@
-from src.ratan_600_data_analyzer.logging.logger_configurator import get_logger
-from src.ratan_600_data_analyzer.ratan.ratan_observation_metadata import RatanObservationMetadata
+from ratan_600_data_analyzer.logging.logger_configurator import get_logger
+from ratan_600_data_analyzer.ratan.ratan_observation_metadata import RatanObservationMetadata
 
 logger = get_logger(__name__)
 

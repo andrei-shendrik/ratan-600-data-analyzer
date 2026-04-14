@@ -1,6 +1,6 @@
 import copy
 
-from src.ratan_600_data_analyzer.ratan.ratan_observation_metadata import RatanObservationMetadata
+from ratan_600_data_analyzer.ratan.ratan_observation_metadata import RatanObservationMetadata
 
 
 class FastAcquisition1To3GHzMetadata(RatanObservationMetadata):

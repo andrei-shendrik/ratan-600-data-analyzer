@@ -3,8 +3,8 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from pathlib import Path
 
-from src.ratan_600_data_analyzer.ratan.data_receiver import DataReceiver
-from src.ratan_600_data_analyzer.ratan.ratan_observation import RatanObservation
+from ratan_600_data_analyzer.ratan.data_receiver import DataReceiver
+from ratan_600_data_analyzer.ratan.ratan_observation import RatanObservation
 
 
 class RatanObservationBuilder(ABC):

@@ -1,6 +1,6 @@
 import copy
 
-from src.ratan_600_data_analyzer.ratan.calibration_coefficients import CalibrationCoefficients
+from ratan_600_data_analyzer.ratan.calibration_coefficients import CalibrationCoefficients
 
 
 class FastAcquisitionCalibrationCoefficients(CalibrationCoefficients):

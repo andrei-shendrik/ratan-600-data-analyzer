@@ -3,8 +3,8 @@ from typing import Tuple, List
 import numpy as np
 from matplotlib import pyplot as plt
 
-from src.ratan_600_data_analyzer.ratan.data_extractor import DataExtractor
-from src.ratan_600_data_analyzer.ratan.polarization_type import PolarizationType
+from ratan_600_data_analyzer.ratan.data_extractor import DataExtractor
+from ratan_600_data_analyzer.ratan.polarization_type import PolarizationType
 
 
 class ScanPlotter:
