@@ -26,5 +26,10 @@ env/
 log/
 *.log
 
+# Environment variables
+.env
+.env.*
+!.env.example
+
 # user specific
-.old/
+src/.old/
