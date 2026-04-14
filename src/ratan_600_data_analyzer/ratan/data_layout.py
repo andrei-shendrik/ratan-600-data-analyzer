@@ -1,6 +1,6 @@
 import numpy as np
 
-from src.ratan_600_data_analyzer.ratan.polarization_type import PolarizationType
+from ratan_600_data_analyzer.ratan.polarization_type import PolarizationType
 
 
 class DataLayout:

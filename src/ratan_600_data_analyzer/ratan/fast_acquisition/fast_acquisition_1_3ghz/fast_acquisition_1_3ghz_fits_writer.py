@@ -3,11 +3,11 @@ from pathlib import Path
 import numpy as np
 from astropy.io import fits
 
-from src.ratan_600_data_analyzer.common.project_info import ProjectInfo
-from src.ratan_600_data_analyzer.ratan.data_receiver import DataReceiver
-from src.ratan_600_data_analyzer.ratan.fast_acquisition.fast_acquisition_1_3ghz.fast_acquisition_1_3ghz_observation import \
+from ratan_600_data_analyzer.common.project_info import ProjectInfo
+from ratan_600_data_analyzer.ratan.data_receiver import DataReceiver
+from ratan_600_data_analyzer.ratan.fast_acquisition.fast_acquisition_1_3ghz.fast_acquisition_1_3ghz_observation import \
     FastAcquisition1To3GHzObservation
-from src.ratan_600_data_analyzer.ratan.ratan_observation_writer import RatanObservationWriter
+from ratan_600_data_analyzer.ratan.ratan_observation_writer import RatanObservationWriter
 
 
 class FastAcquisition1To3GHzFitsWriter(RatanObservationWriter):

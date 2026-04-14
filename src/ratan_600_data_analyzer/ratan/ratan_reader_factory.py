@@ -1,13 +1,13 @@
 from pathlib import Path
 from typing import List, Type
 
-from src.ratan_600_data_analyzer.observation.observation_reader import ObservationReader
-from src.ratan_600_data_analyzer.ratan.fast_acquisition.fast_acquisition_1_3ghz.fast_acquisition_1_3ghz_bin_reader import \
+from ratan_600_data_analyzer.observation.observation_reader import ObservationReader
+from ratan_600_data_analyzer.ratan.fast_acquisition.fast_acquisition_1_3ghz.fast_acquisition_1_3ghz_bin_reader import \
     FastAcquisition1To3GHzBinReader
-from src.ratan_600_data_analyzer.ratan.fast_acquisition.fast_acquisition_1_3ghz.fast_acquisition_1_3ghz_fits_reader import \
+from ratan_600_data_analyzer.ratan.fast_acquisition.fast_acquisition_1_3ghz.fast_acquisition_1_3ghz_fits_reader import \
     FastAcquisition1To3GHzFitsReader
-from src.ratan_600_data_analyzer.ratan.ratan_observation_reader import RatanObservationReader
-from src.ratan_600_data_analyzer.ratan.sspc.sspc_fits_reader import SSPCFitsReader
+from ratan_600_data_analyzer.ratan.ratan_observation_reader import RatanObservationReader
+from ratan_600_data_analyzer.ratan.sspc.sspc_fits_reader import SSPCFitsReader
 
 
 class RatanReaderFactory:

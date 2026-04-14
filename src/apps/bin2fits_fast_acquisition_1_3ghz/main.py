@@ -2,13 +2,13 @@ import argparse
 import sys
 from pathlib import Path
 
-from src.apps.bin2fits_fast_acquisition_1_3ghz.bin2fits_fast_acqusition_1_3ghz_app import Bin2FitsFastAcquisitionApp
-from src.apps.bin2fits_fast_acquisition_1_3ghz.infrastructure.database import init_db
-from src.apps.bin2fits_fast_acquisition_1_3ghz.scripts.check_db import check_db
-from src.apps.bin2fits_fast_acquisition_1_3ghz.settings.bin2fits_fast_acquisition_1_3ghz_settings import \
+from apps.bin2fits_fast_acquisition_1_3ghz.bin2fits_fast_acqusition_1_3ghz_app import Bin2FitsFastAcquisitionApp
+from apps.bin2fits_fast_acquisition_1_3ghz.infrastructure.database import init_db
+from apps.bin2fits_fast_acquisition_1_3ghz.scripts.check_db import check_db
+from apps.bin2fits_fast_acquisition_1_3ghz.settings.bin2fits_fast_acquisition_1_3ghz_settings import \
     Bin2FitsFastAcquisition1To3GHzSettings
-from src.ratan_600_data_analyzer.common.project_info import ProjectInfo
-from src.ratan_600_data_analyzer.logging.logger_configurator import LoggerConfigurator, get_logger
+from ratan_600_data_analyzer.common.project_info import ProjectInfo
+from ratan_600_data_analyzer.logging.logger_configurator import LoggerConfigurator, get_logger
 
 logger = get_logger(__name__)
 

@@ -1,9 +1,9 @@
 import copy
 
-from src.ratan_600_data_analyzer.ratan.fast_acquisition.fast_acquisition_1_3ghz.raw_data.generator_state_data import \
+from ratan_600_data_analyzer.ratan.fast_acquisition.fast_acquisition_1_3ghz.raw_data.generator_state_data import \
     GeneratorStateData
-from src.ratan_600_data_analyzer.ratan.fast_acquisition.fast_acquisition_1_3ghz.raw_data.kurtosis_data import KurtosisData
-from src.ratan_600_data_analyzer.ratan.fast_acquisition.fast_acquisition_1_3ghz.raw_data.polarization_channels_data import \
+from ratan_600_data_analyzer.ratan.fast_acquisition.fast_acquisition_1_3ghz.raw_data.kurtosis_data import KurtosisData
+from ratan_600_data_analyzer.ratan.fast_acquisition.fast_acquisition_1_3ghz.raw_data.polarization_channels_data import \
     PolarizationChannelsData
 
 

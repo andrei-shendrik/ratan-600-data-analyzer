@@ -4,12 +4,12 @@ from pathlib import Path
 import numpy as np
 from astropy.io import fits
 
-from src.ratan_600_data_analyzer.logging.logger_configurator import get_logger
-from src.ratan_600_data_analyzer.observation.observation import Observation
-from src.ratan_600_data_analyzer.ratan.ratan_observation_reader import RatanObservationReader
-from src.ratan_600_data_analyzer.ratan.sspc.sspc_data import SSPCData
-from src.ratan_600_data_analyzer.ratan.sspc.sspc_metadata_fits_loader import SSPCMetadataFitsLoader
-from src.ratan_600_data_analyzer.ratan.sspc.sspc_observation import SSPCObservation
+from ratan_600_data_analyzer.logging.logger_configurator import get_logger
+from ratan_600_data_analyzer.observation.observation import Observation
+from ratan_600_data_analyzer.ratan.ratan_observation_reader import RatanObservationReader
+from ratan_600_data_analyzer.ratan.sspc.sspc_data import SSPCData
+from ratan_600_data_analyzer.ratan.sspc.sspc_metadata_fits_loader import SSPCMetadataFitsLoader
+from ratan_600_data_analyzer.ratan.sspc.sspc_observation import SSPCObservation
 
 logger = get_logger(__name__)
 

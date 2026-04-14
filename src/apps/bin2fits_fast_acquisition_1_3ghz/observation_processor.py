@@ -1,11 +1,11 @@
 from pathlib import Path
 
-from src.apps.analyzer.main import _get_output_fits_filename
-from src.ratan_600_data_analyzer.ratan.fast_acquisition.fast_acquisition_1_3ghz.fast_acquisition_1_3ghz_fits_writer import \
+from apps.analyzer.main import _get_output_fits_filename
+from ratan_600_data_analyzer.ratan.fast_acquisition.fast_acquisition_1_3ghz.fast_acquisition_1_3ghz_fits_writer import \
     FastAcquisition1To3GHzFitsWriter
-from src.ratan_600_data_analyzer.ratan.fast_acquisition.fast_acquisition_1_3ghz.fast_acquisition_1_3ghz_observation import \
+from ratan_600_data_analyzer.ratan.fast_acquisition.fast_acquisition_1_3ghz.fast_acquisition_1_3ghz_observation import \
     FastAcquisition1To3GHzObservation
-from src.ratan_600_data_analyzer.ratan.ratan_builder_factory import RatanBuilderFactory
+from ratan_600_data_analyzer.ratan.ratan_builder_factory import RatanBuilderFactory
 
 
 class ObservationProcessor:

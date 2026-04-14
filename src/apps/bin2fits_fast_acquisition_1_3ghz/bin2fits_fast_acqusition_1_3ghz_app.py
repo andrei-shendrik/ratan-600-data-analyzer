@@ -4,7 +4,7 @@ from sqlalchemy.orm import sessionmaker
 from apps.bin2fits_fast_acquisition_1_3ghz.cli.handlers import CliBatchHandler
 from apps.bin2fits_fast_acquisition_1_3ghz.daemon.watcher import Watcher
 from apps.bin2fits_fast_acquisition_1_3ghz.services.observation_processor import ObservationProcessor
-from src.ratan_600_data_analyzer.logging.logger_configurator import get_logger
+from ratan_600_data_analyzer.logging.logger_configurator import get_logger
 
 logger = get_logger(__name__)
 

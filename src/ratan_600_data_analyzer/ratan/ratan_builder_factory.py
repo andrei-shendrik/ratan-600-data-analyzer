@@ -1,11 +1,11 @@
 from pathlib import Path
 from typing import TypeGuard, Union
 
-from src.ratan_600_data_analyzer.ratan.data_receiver import DataReceiver
-from src.ratan_600_data_analyzer.ratan.fast_acquisition.fast_acquisition_1_3ghz.fast_acquisition_1_3ghz_builder import \
+from ratan_600_data_analyzer.ratan.data_receiver import DataReceiver
+from ratan_600_data_analyzer.ratan.fast_acquisition.fast_acquisition_1_3ghz.fast_acquisition_1_3ghz_builder import \
     FastAcquisition1To3GHzBuilder
-from src.ratan_600_data_analyzer.ratan.ratan_observation_builder import RatanObservationBuilder
-from src.ratan_600_data_analyzer.ratan.sspc.sspc_builder import SSPCBuilder
+from ratan_600_data_analyzer.ratan.ratan_observation_builder import RatanObservationBuilder
+from ratan_600_data_analyzer.ratan.sspc.sspc_builder import SSPCBuilder
 
 
 class RatanBuilderFactory:

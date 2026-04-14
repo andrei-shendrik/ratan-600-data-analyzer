@@ -7,16 +7,16 @@ import numpy as np
 from astropy.io import fits
 from matplotlib import pyplot as plt
 
-from src.ratan_600_data_analyzer.ratan.data_extractor import DataExtractor
-from src.ratan_600_data_analyzer.ratan.fast_acquisition.fast_acquisition_1_3ghz.fast_acquisition_1_3ghz_configuration import \
+from ratan_600_data_analyzer.ratan.data_extractor import DataExtractor
+from ratan_600_data_analyzer.ratan.fast_acquisition.fast_acquisition_1_3ghz.fast_acquisition_1_3ghz_configuration import \
     config
-from src.ratan_600_data_analyzer.ratan.fast_acquisition.fast_acquisition_1_3ghz.fast_acquisition_1_3ghz_fits_writer import \
+from ratan_600_data_analyzer.ratan.fast_acquisition.fast_acquisition_1_3ghz.fast_acquisition_1_3ghz_fits_writer import \
     FastAcquisition1To3GHzFitsWriter
-from src.ratan_600_data_analyzer.ratan.fast_acquisition.fast_acquisition_1_3ghz.fast_acquisition_1_3ghz_observation import \
+from ratan_600_data_analyzer.ratan.fast_acquisition.fast_acquisition_1_3ghz.fast_acquisition_1_3ghz_observation import \
     FastAcquisition1To3GHzObservation
-from src.ratan_600_data_analyzer.ratan.polarization_type import PolarizationType
-from src.ratan_600_data_analyzer.ratan.ratan_builder_factory import RatanBuilderFactory
-from src.ratan_600_data_analyzer.utils.common_utils import time_counter
+from ratan_600_data_analyzer.ratan.polarization_type import PolarizationType
+from ratan_600_data_analyzer.ratan.ratan_builder_factory import RatanBuilderFactory
+from ratan_600_data_analyzer.utils.common_utils import time_counter
 
 FITS_OUTPUT_PATH = Path(r"D:\data\astro\ratan-600\fast-acquisition-1-3ghz\fits\sun")
 

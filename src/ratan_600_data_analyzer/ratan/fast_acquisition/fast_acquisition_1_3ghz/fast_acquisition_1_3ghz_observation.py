@@ -1,12 +1,12 @@
 import copy
 
-from src.ratan_600_data_analyzer.ratan.fast_acquisition.fast_acquisition_1_3ghz.fast_acquisition_1_3ghz_data import \
+from ratan_600_data_analyzer.ratan.fast_acquisition.fast_acquisition_1_3ghz.fast_acquisition_1_3ghz_data import \
     FastAcquisition1To3GHzData
-from src.ratan_600_data_analyzer.ratan.fast_acquisition.fast_acquisition_1_3ghz.fast_acquisition_1_3ghz_metadata import \
+from ratan_600_data_analyzer.ratan.fast_acquisition.fast_acquisition_1_3ghz.fast_acquisition_1_3ghz_metadata import \
     FastAcquisition1To3GHzMetadata
-from src.ratan_600_data_analyzer.ratan.fast_acquisition.fast_acquisition_1_3ghz.raw_data.fast_acquisition_1_3ghz_raw_data import \
+from ratan_600_data_analyzer.ratan.fast_acquisition.fast_acquisition_1_3ghz.raw_data.fast_acquisition_1_3ghz_raw_data import \
     FastAcquisition1To3GHzRawData
-from src.ratan_600_data_analyzer.ratan.ratan_observation import RatanObservation
+from ratan_600_data_analyzer.ratan.ratan_observation import RatanObservation
 
 
 class FastAcquisition1To3GHzObservation(RatanObservation):

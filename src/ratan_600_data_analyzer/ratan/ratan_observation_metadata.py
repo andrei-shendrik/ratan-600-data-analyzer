@@ -1,7 +1,7 @@
 from abc import abstractmethod, ABC
 from datetime import datetime
 
-from src.ratan_600_data_analyzer.observation.observation_metadata import ObservationMetadata
+from ratan_600_data_analyzer.observation.observation_metadata import ObservationMetadata
 
 
 class RatanObservationMetadata(ObservationMetadata, ABC):

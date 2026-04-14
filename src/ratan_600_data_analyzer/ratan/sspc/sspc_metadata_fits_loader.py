@@ -4,16 +4,16 @@ from datetime import datetime, timezone
 
 import numpy as np
 
-from src.ratan_600_data_analyzer.logging.logger_configurator import get_logger
-from src.ratan_600_data_analyzer.ratan.axis import Axis
-from src.ratan_600_data_analyzer.ratan.data_layout import DataLayout
-from src.ratan_600_data_analyzer.fits.fits_header_reader import FitsHeaderReader
-from src.ratan_600_data_analyzer.fits.fits_bin_table_reader import FitsBinTableReader
-from src.ratan_600_data_analyzer.ratan.polarization_type import PolarizationType
-from src.ratan_600_data_analyzer.ratan.ratan_metadata_loader import RatanMetadataLoader
-from src.ratan_600_data_analyzer.ratan.sspc.sspc_constants import SSPC_16_START_DATE
-from src.ratan_600_data_analyzer.ratan.sspc.sspc_metadata import SSPCMetadata
-from src.ratan_600_data_analyzer.utils.date_utils import DateUtils
+from ratan_600_data_analyzer.logging.logger_configurator import get_logger
+from ratan_600_data_analyzer.ratan.axis import Axis
+from ratan_600_data_analyzer.ratan.data_layout import DataLayout
+from ratan_600_data_analyzer.fits.fits_header_reader import FitsHeaderReader
+from ratan_600_data_analyzer.fits.fits_bin_table_reader import FitsBinTableReader
+from ratan_600_data_analyzer.ratan.polarization_type import PolarizationType
+from ratan_600_data_analyzer.ratan.ratan_metadata_loader import RatanMetadataLoader
+from ratan_600_data_analyzer.ratan.sspc.sspc_constants import SSPC_16_START_DATE
+from ratan_600_data_analyzer.ratan.sspc.sspc_metadata import SSPCMetadata
+from ratan_600_data_analyzer.utils.date_utils import DateUtils
 
 logger = get_logger(__name__)
 

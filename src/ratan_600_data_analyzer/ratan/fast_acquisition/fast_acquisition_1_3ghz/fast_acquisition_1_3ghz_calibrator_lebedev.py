@@ -2,15 +2,15 @@ import copy
 
 import numpy as np
 
-from src.ratan_600_data_analyzer.ratan.fast_acquisition.fast_acquisition_1_3ghz.fast_acquisition_1_3ghz_calibration_coefficients import \
+from ratan_600_data_analyzer.ratan.fast_acquisition.fast_acquisition_1_3ghz.fast_acquisition_1_3ghz_calibration_coefficients import \
     FastAcquisitionCalibrationCoefficients
-from src.ratan_600_data_analyzer.ratan.fast_acquisition.fast_acquisition_1_3ghz.fast_acquisition_1_3ghz_calibrator import \
+from ratan_600_data_analyzer.ratan.fast_acquisition.fast_acquisition_1_3ghz.fast_acquisition_1_3ghz_calibrator import \
     FastAcquisition1To3GHzCalibrator
-from src.ratan_600_data_analyzer.ratan.fast_acquisition.fast_acquisition_1_3ghz.fast_acquisition_1_3ghz_configuration import \
+from ratan_600_data_analyzer.ratan.fast_acquisition.fast_acquisition_1_3ghz.fast_acquisition_1_3ghz_configuration import \
     config
-from src.ratan_600_data_analyzer.ratan.fast_acquisition.fast_acquisition_1_3ghz.fast_acquisition_1_3ghz_observation import \
+from ratan_600_data_analyzer.ratan.fast_acquisition.fast_acquisition_1_3ghz.fast_acquisition_1_3ghz_observation import \
     FastAcquisition1To3GHzObservation
-from src.ratan_600_data_analyzer.ratan.polarization_type import PolarizationType
+from ratan_600_data_analyzer.ratan.polarization_type import PolarizationType
 
 
 class FastAcquisition1To3GHzCalibratorLebedev(FastAcquisition1To3GHzCalibrator):

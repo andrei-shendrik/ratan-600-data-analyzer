@@ -5,8 +5,8 @@ from dotenv import dotenv_values
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-from src.ratan_600_data_analyzer.database.database_settings import DatabaseSettings
-from src.ratan_600_data_analyzer.logging.logging_settings import LoggingSettings
+from ratan_600_data_analyzer.database.database_settings import DatabaseSettings
+from ratan_600_data_analyzer.logging.logging_settings import LoggingSettings
 
 
 class Bin2FitsFastAcquisition1To3GHzSettings(BaseSettings):
