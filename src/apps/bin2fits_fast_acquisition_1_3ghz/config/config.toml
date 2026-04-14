@@ -1,0 +1,26 @@
+# Настройки логирования
+[logging]
+log_format = '%(asctime)s [%(levelname)s] [%(module)s] %(message)s'
+date_format = '%Y-%m-%d %H:%M:%S'
+rotation_size_mb = 10
+backup_count = 5
+
+[[logging.handlers]]
+level = "DEBUG"
+filename = "debug.log"
+
+[[logging.handlers]]
+level = "INFO"
+filename = "info.log"
+
+[[logging.handlers]]
+level = "WARNING"
+filename = "warning.log"
+
+[[logging.handlers]]
+level = "ERROR"
+filename = "error.log"
+
+[[logging.handlers]]
+level = "CRITICAL"
+filename = "critical.log"
