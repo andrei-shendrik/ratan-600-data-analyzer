@@ -17,18 +17,27 @@ def main():
 
     # settings
     try:
-        project_root = ProjectInfo.find_project_root()
+        project_info = ProjectInfo()
+        project_root = project_info.project_root
         current_dir = Path(__file__).resolve().parent
         env_file = project_root / ".env"
-        toml_file = current_dir / "config" / "config.toml"
+        app_conf_toml = current_dir / "config" / "config.toml"
 
-        app_settings = Bin2FitsFastAcquisition1To3GHzSettings.load(
-            env_path=env_file,
-            toml_path=toml_file
-        )
+        if not env_file.is_file():
+            logger.critical(f".env file not found at {env_file}")
+            sys.exit(1)
+
+        if not app_conf_toml.is_file():
+            logger.critical(f"Application config not found at {app_conf_toml}")
+            sys.exit(1)
     except Exception as e:
-        logger.critical(f"Error load config:\n{e}")
-        raise
+        logger.critical(f"Error:\n{e}")
+        sys.exit(1)
+
+    app_settings = Bin2FitsFastAcquisition1To3GHzSettings.load(
+        env_path=env_file,
+        toml_path=app_conf_toml
+    )
 
     # logging
     configurator = LoggerConfigurator(app_settings.logging_settings)
@@ -38,9 +47,9 @@ def main():
     init_db(app_settings.database_settings.db_url)
 
     # test DB
-    log_level = app_settings.logging_settings.log_level
-    if log_level == "DEBUG":
-        check_db(app_settings)
+    # log_level = app_settings.logging_settings.log_level
+    # if log_level == "DEBUG":
+    #     check_db(app_settings)
 
     # Console parsing
     # bin2fits_fast_1_3 --help

@@ -37,8 +37,12 @@ def process_observations():
     data_loader
     """
 
-    fast_acquisition_bin_file = Path(
-        r"D:\data\astro\ratan-600\fast-acquisition-1-3ghz\raw\sun\2024\08\2024-08-01_121957_sun+00.bin.gz")
+    fast_acquisition_fits_file = Path(
+        r"D:\data\astro\ratan-600\fast-acquisition-1-3ghz\fits\sun\2026\03\2026-03-01_120948_sun+04.fits")
+    read_fits(fast_acquisition_fits_file)
+
+    #fast_acquisition_bin_file = Path(
+    #    r"D:\data\astro\ratan-600\fast-acquisition-1-3ghz\raw\sun\2024\08\2024-08-01_121957_sun+00.bin.gz")
 
     # fast_acquisition_bin_file = Path(
     #     r"D:\data\astro\ratan-600\fast-acquisition-1-3ghz\raw\sun\2025\09\2025-09-01_121336_sun+00.bin.gz")
@@ -47,10 +51,10 @@ def process_observations():
     # fast_acquisition_bin_file = Path(
     #          r"D:\data\astro\ratan-600\fast-acquisition-1-3ghz\raw\sun\2025\03\2025-03-21_122043_sun+00.bin.gz")
 
-    output_fits_file = process_fast_acquisition(fast_acquisition_bin_file, FITS_OUTPUT_PATH)
+    #output_fits_file = process_fast_acquisition(fast_acquisition_bin_file, FITS_OUTPUT_PATH)
 
     #fits_file = Path(r"D:\data\astro\ratan-600\fast-acquisition-1-3ghz\fits\sun\2025\09\2025-09-01_121336_sun+00.fits")
-    #ead_fits(fits_file)
+    #read_fits(fits_file)
 
 @time_counter
 def process_fast_acquisition(fast_acquisition_bin_file: Path, fits_output_path: Path) -> Path:

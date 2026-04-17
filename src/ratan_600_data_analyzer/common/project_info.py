@@ -1,35 +1,43 @@
-import tomllib
+from importlib import metadata
 from pathlib import Path
 
 
 class ProjectInfo:
-    def __init__(self, toml_filename: str = "pyproject.toml"):
 
-        project_root = ProjectInfo.find_project_root()
-        self.toml_path = Path(project_root / toml_filename)
-        if not self.toml_path.exists() and not self.toml_path.is_file():
-            raise FileNotFoundError(f"Project file not found: {self.toml_path}")
+    _PACKAGE_NAME = "ratan-600-data-analyzer"
 
-        self._dict = ProjectInfo._load_toml(self.toml_path)
+    def __init__(self):
         self._project_name = self._get_project_name()
         self._project_version = self._get_project_version()
+        self._project_root = self._find_project_root()
 
-    def _get_project_name(self) -> str:
-        project_section = self._dict.get("project", {})
-        if name := project_section.get("name"):
-            return name
-        raise ValueError(f"Project name not found in [project] section of {self.toml_path}")
+    @classmethod
+    def _get_project_name(cls) -> str:
+        try:
+            metadata.metadata(cls._PACKAGE_NAME)
+            return cls._PACKAGE_NAME
+        except metadata.PackageNotFoundError:
+            raise RuntimeError(
+                f"Critical error: '{cls._PACKAGE_NAME}' not installed in .venv"
+            )
 
-    def _get_project_version(self) -> str:
-        project_section = self._dict.get("project", {})
-        if version := project_section.get("version"):
-            return version
-        raise ValueError(f"Project version not found in [project] section of {self.toml_path}")
+    @classmethod
+    def _get_project_version(cls) -> str:
+        try:
+            return metadata.version(cls._PACKAGE_NAME)
+        except metadata.PackageNotFoundError:
+            raise RuntimeError(
+                f"Critical error: unable to find version of '{cls._PACKAGE_NAME}'"
+            )
 
     @staticmethod
-    def find_project_root(start_path: Path = None, markers: list = None) -> Path:
+    def get_code_location() -> Path:
+        return Path(__file__).resolve().parent
+
+    @staticmethod
+    def _find_project_root(start_path: Path = None, markers: list = None) -> Path:
         if start_path is None:
-            start_path = Path.cwd()
+            start_path = ProjectInfo.get_code_location()
 
         if markers is None:
             markers = [
@@ -45,14 +53,9 @@ class ProjectInfo:
 
         while current != current.parent:
             if any((current / marker).exists() for marker in markers):
-                return current
+                return Path(current)
             current = current.parent
         raise FileNotFoundError(f"Project root not found from {start_path}")
-
-    @staticmethod
-    def _load_toml(toml_path: Path) -> dict:
-        with open(toml_path, "rb") as f:
-            return tomllib.load(f)
 
     @property
     def project_name(self) -> str:
@@ -61,3 +64,7 @@ class ProjectInfo:
     @property
     def project_version(self) -> str:
         return self._project_version
+
+    @property
+    def project_root(self) -> Path:
+        return self._project_root

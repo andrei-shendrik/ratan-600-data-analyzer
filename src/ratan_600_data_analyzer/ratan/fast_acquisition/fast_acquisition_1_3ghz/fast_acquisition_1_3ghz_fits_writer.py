@@ -105,8 +105,11 @@ class FastAcquisition1To3GHzFitsWriter(RatanObservationWriter):
         header = primary_hdu.header
 
         project_info = ProjectInfo()
+        pkg_version = project_info.project_version
+        # pkg_name = project_info.project_name
+        app_name = "bin2fits_fast_1_3"
 
-        header["SIMPLE"] = (True, f"Written by {project_info.project_name} v{project_info.project_version}")
+        header["SIMPLE"] = (True, f"Written by {app_name} (v{pkg_version})")
 
         # naxis пишутся автоматом при создании фитса, можно не заполнять.
         # header['NAXIS'] = self._data.ndim
