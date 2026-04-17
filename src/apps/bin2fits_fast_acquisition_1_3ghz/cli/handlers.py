@@ -34,7 +34,7 @@ class CliBatchHandler:
                 logger.error(f"Specified .bin file not found: {target_file}")
             return
 
-        logger.info(f"Search for .bin files in directory: {bin_files_dir}")
+        logger.debug(f"Search for .bin files in directory: {bin_files_dir}")
         all_found_files = list(self._find_files(bin_files_dir, args))
 
         if len(all_found_files) == 0:
@@ -43,7 +43,7 @@ class CliBatchHandler:
 
         files_to_process = []
         for file_path in all_found_files:
-            if not self._obs_processor.is_skippable(
+            if self._obs_processor.is_needed_to_process(
                     bin_file=file_path,
                     fits_base_dir=fits_files_dir,
                     overwrite=args.overwrite,
