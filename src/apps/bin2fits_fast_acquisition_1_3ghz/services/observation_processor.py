@@ -18,7 +18,11 @@ class ObservationProcessor:
         self.session_factory = session_factory
         self.settings = settings
 
-    def process_file(self, bin_file: Path, fits_base_dir: Path, overwrite: bool = False, retry_failed: bool = False):
+    def is_needed_to_process(self, bin_file: Path, fits_base_dir: Path, overwrite: bool = False,
+                     retry_failed: bool = False) -> bool:
+        """
+
+        """
         bin_file = bin_file.resolve()
         filename = bin_file.name
 
@@ -32,26 +36,62 @@ class ObservationProcessor:
             fits_filename = bin_file.with_suffix('.fits').name.lower()
 
         if is_in_bin_archive:
-            # Если исходник из архива - сохраняем структуру /year/month
             year_month = bin_file.parent.relative_to(bin_archive)
             output_fits_dir = fits_base_dir / year_month
         else:
-            # Если исходник внешний - кладем результат "плоско" в указанную fits_dir
+            output_fits_dir = fits_base_dir
+
+        output_fits_file = output_fits_dir / fits_filename
+        is_in_fits_archive = output_fits_file.is_relative_to(fits_archive)
+        should_use_db = is_in_bin_archive and is_in_fits_archive
+
+        if output_fits_file.exists() and not overwrite:
+            logger.debug(f"[{filename}] skipped: FITS file already exists (use flag --overwrite)")
+            return False
+
+        if should_use_db:
+            with self.session_factory() as session:
+                stmt = select(FastAcquisition1To3GHzRaw).filter_by(bin_filename=filename)
+                existing_record = session.scalar(stmt)
+                if existing_record:
+                    if existing_record.status == ProcessingStatus.SUCCESS and not overwrite and output_fits_file.exists():
+                        logger.debug(f"[{filename}] skipped: DB status is SUCCESS (use flag --overwrite)")
+                        return False
+                    if existing_record.status == ProcessingStatus.FAILED and not retry_failed and not overwrite:
+                        logger.debug(f"[{filename}] skipped: DB status is FAILED. Use flag --failed to retry")
+                        return False
+        return True
+
+    def process_file(self, bin_file: Path, fits_base_dir: Path, overwrite: bool = False, retry_failed: bool = False):
+        if not self.is_needed_to_process(bin_file, fits_base_dir, overwrite, retry_failed):
+            return
+
+        bin_file = bin_file.resolve()
+        filename = bin_file.name
+
+        bin_archive = self.settings.bin_archive.resolve()
+        fits_archive = self.settings.fits_archive.resolve()
+        is_in_bin_archive = bin_file.is_relative_to(bin_archive)
+
+        if filename.endswith('.bin.gz'):
+            fits_filename = filename.replace('.bin.gz', '.fits').lower()
+        else:
+            fits_filename = bin_file.with_suffix('.fits').name.lower()
+
+        if is_in_bin_archive:
+            year_month = bin_file.parent.relative_to(bin_archive)
+            output_fits_dir = fits_base_dir / year_month
+        else:
             output_fits_dir = fits_base_dir
 
         output_fits_dir.mkdir(parents=True, exist_ok=True)
         output_fits_file = output_fits_dir / fits_filename
 
         is_in_fits_archive = output_fits_file.is_relative_to(fits_archive)
-
         should_use_db = is_in_bin_archive and is_in_fits_archive
 
         if not should_use_db:
             logger.info(f"[{filename}] Processing outside archives: disable write to DB")
-
-        if output_fits_file.exists() and not overwrite:
-            logger.info(f"[{filename}] skipped: FITS file already exists (use flag --overwrite)")
-            return
 
         # БД
         session: Session | None = None
@@ -60,18 +100,9 @@ class ObservationProcessor:
         try:
             if should_use_db:
                 session = self.session_factory()
-
                 if session is not None:
-                    # existing_record = session.query(FastAcquisition1To3GHzRaw).filter_by(bin_filename=filename).first()
                     stmt = select(FastAcquisition1To3GHzRaw).filter_by(bin_filename=filename)
                     existing_record = session.scalar(stmt)
-                    if existing_record:
-                        if existing_record.status == ProcessingStatus.SUCCESS and not overwrite and output_fits_file.exists():
-                            logger.info(f"[{filename}] skipped: DB status is SUCCESS (use flag --overwrite")
-                            return
-                        if existing_record.status == ProcessingStatus.FAILED and not retry_failed and not overwrite:
-                            logger.info(f"[{filename}] skipped: DB status is FAILED. Use flag --failed to retry")
-                            return
 
             # processing
             logger.info(f"[{filename}]: started processing")
@@ -86,13 +117,15 @@ class ObservationProcessor:
                                .build())
 
             if observation is None:
-                raise Exception(f"processing failed, no observation created")
+                logger.error(f"Processing failed, no .fits file created")
+                raise Exception()
 
             if isinstance(observation, FastAcquisition1To3GHzObservation):
                 writer = FastAcquisition1To3GHzFitsWriter(observation)
                 writer.write(output_fits_file, overwrite)
             else:
-                raise Exception(f"Failed to write observation")
+                logger.error(f"Failed to write observation")
+                raise Exception()
 
             logger.info(f"[{filename}] successfully converted to: {output_fits_file}")
 

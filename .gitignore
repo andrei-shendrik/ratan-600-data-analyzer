@@ -33,3 +33,4 @@ log/
 
 # user specific
 src/.old/
+release.py

@@ -1,4 +1,3 @@
-import os
 import re
 from datetime import datetime
 from pathlib import Path
@@ -35,30 +34,39 @@ class CliBatchHandler:
                 logger.error(f"Specified .bin file not found: {target_file}")
             return
 
-        # Пакетная обработка (поиск файлов)
         logger.info(f"Search for .bin files in directory: {bin_files_dir}")
-        files_to_process = list(self._find_files(bin_files_dir, args))
-        total_files = len(files_to_process)
+        all_found_files = list(self._find_files(bin_files_dir, args))
 
-        if total_files == 0:
+        if len(all_found_files) == 0:
             logger.info("Files not found")
             return
 
-        logger.info(f".bin files found: {total_files}")
+        files_to_process = []
+        for file_path in all_found_files:
+            if not self._obs_processor.is_skippable(
+                    bin_file=file_path,
+                    fits_base_dir=fits_files_dir,
+                    overwrite=args.overwrite,
+                    retry_failed=args.failed
+            ):
+                files_to_process.append(file_path)
+
+        total_files = len(files_to_process)
+
+        if total_files == 0:
+            logger.info(f"{len(all_found_files)} files were found, but they have all already been processed or failed (use flags --overwrite / --failed)")
+            return
+        logger.info(f"{total_files} files will be processed")
 
         # Запуск конвеера
-        success_count = 0
         for i, file_path in enumerate(files_to_process, 1):
             logger.info(f"--- [Processing {i} of {total_files}] --- : {file_path}")
-
-            # process_file внутри себя ловит ошибки, поэтому цикл не прервется
             self._obs_processor.process_file(
                 bin_file=file_path,
                 fits_base_dir=fits_files_dir,
                 overwrite=args.overwrite,
                 retry_failed=args.failed
             )
-            success_count += 1
 
     def _parse_date(self, date_str: str) -> datetime | None:
         if not date_str:

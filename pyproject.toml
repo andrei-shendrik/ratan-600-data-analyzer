@@ -7,7 +7,7 @@ where = ["src"]
 
 [project]
 name = "ratan-600-data-analyzer"
-version = "1.1.4"
+version = "1.1.5"
 requires-python = ">= 3.12"
 readme = "README.md"
 description = ""
