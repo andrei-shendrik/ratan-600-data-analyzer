@@ -12,6 +12,7 @@ Base = declarative_base()
 
 class ProcessingStatus(enum.Enum):
     UNPROCESSED = "unprocessed"
+    PROCESSING = "processing"
     SUCCESS = "success"
     FAILED = "failed"
 
