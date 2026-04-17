@@ -1,6 +1,7 @@
 from pathlib import Path
 
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from apps.bin2fits_fast_acquisition_1_3ghz.infrastructure.database import FastAcquisition1To3GHzRaw, ProcessingStatus
@@ -54,6 +55,9 @@ class ObservationProcessor:
                 stmt = select(FastAcquisition1To3GHzRaw).filter_by(bin_filename=filename)
                 existing_record = session.scalar(stmt)
                 if existing_record:
+                    if existing_record.status == ProcessingStatus.PROCESSING:
+                        logger.debug(f"[{filename}] skipped: Currently processing by another worker")
+                        return False
                     if existing_record.status == ProcessingStatus.SUCCESS and not overwrite and output_fits_file.exists():
                         logger.debug(f"[{filename}] skipped: DB status is SUCCESS (use flag --overwrite)")
                         return False
@@ -94,17 +98,46 @@ class ObservationProcessor:
             logger.info(f"[{filename}] Processing outside archives: disable write to DB")
 
         # БД
+        # блокировка файла
         session: Session | None = None
         existing_record: FastAcquisition1To3GHzRaw | None = None
-
-        try:
-            if should_use_db:
-                session = self.session_factory()
-                if session is not None:
+        if should_use_db:
+            session = self.session_factory()
+            if session is not None:
+                try:
                     stmt = select(FastAcquisition1To3GHzRaw).filter_by(bin_filename=filename)
                     existing_record = session.scalar(stmt)
 
-            # processing
+                    if existing_record:
+                        # Файл уже был в БД (например, FAILED), обновляем статус
+                        existing_record.status = ProcessingStatus.PROCESSING
+                    else:
+                        # Новый файл, создаем запись с блокировкой
+                        existing_record = FastAcquisition1To3GHzRaw(
+                            bin_path_filename=str(bin_file),
+                            bin_filename=filename,
+                            status=ProcessingStatus.PROCESSING,
+                        )
+                        session.add(existing_record)
+
+                    session.commit()  # Сохраняем "бронь" в БД
+
+                except IntegrityError:
+                    # Если 2 процесса одновременно дошли до этой строки, у второго вылетит IntegrityError
+                    session.rollback()
+                    logger.info(f"[{filename}] Race condition averted: File just claimed by another process.")
+                    session.close()
+                    # Обнуляем session, чтобы блок finally (в самом конце) не пытался ее закрыть дважды
+                    session = None
+                    return  # Уходим, файл обрабатывает конкурент
+                except Exception as e:
+                    session.rollback()
+                    logger.error(f"[{filename}] DB Claim error: {e}")
+                    session.close()
+                    session = None
+                    return
+
+        try:
             logger.info(f"[{filename}]: started processing")
             builder = RatanBuilderFactory.create_builder(bin_file)
             observation = None
@@ -117,46 +150,53 @@ class ObservationProcessor:
                                .build())
 
             if observation is None:
-                logger.error(f"Processing failed, no .fits file created")
-                raise Exception()
+                raise Exception(f"processing failed, no observation created")
 
             if isinstance(observation, FastAcquisition1To3GHzObservation):
                 writer = FastAcquisition1To3GHzFitsWriter(observation)
                 writer.write(output_fits_file, overwrite)
             else:
-                logger.error(f"Failed to write observation")
-                raise Exception()
+                raise Exception(f"Failed to write observation")
 
             logger.info(f"[{filename}] successfully converted to: {output_fits_file}")
 
+            # --- ИЗМЕНЕНО: Обновляем статус забронированной записи на SUCCESS ---
             if session is not None:
-                self._save_to_db(
-                    session=session,
-                    record=existing_record,
-                    bin_path=bin_file,
-                    fits_path=output_fits_file,
-                    status=ProcessingStatus.SUCCESS,
-                    comment=""
-                )
+                self._update_db_status(session, existing_record, output_fits_file, ProcessingStatus.SUCCESS, "")
 
         except Exception as e:
             error_msg = str(e)[:500]
             logger.error(f"[{filename}] processing error: {e}", exc_info=True)
+
+            # --- ИЗМЕНЕНО: Обновляем статус забронированной записи на FAILED ---
             if session is not None:
                 try:
-                    self._save_to_db(
-                        session=session,
-                        record=existing_record,
-                        bin_path=bin_file,
-                        fits_path=None,
-                        status=ProcessingStatus.FAILED,
-                        comment=error_msg
-                    )
+                    self._update_db_status(session, existing_record, None, ProcessingStatus.FAILED, error_msg)
                 except Exception as db_fallback_err:
                     logger.critical(f"Failed to save FAILED status to DB: {db_fallback_err}")
         finally:
             if session is not None:
                 session.close()
+
+    def _update_db_status(
+            self,
+            session: Session,
+            record: FastAcquisition1To3GHzRaw | None,
+            fits_path: Path | None,
+            status: ProcessingStatus,
+            comment: str
+    ):
+
+        try:
+            record.fits_path_filename = str(fits_path) if fits_path else None
+            record.fits_filename = fits_path.name if fits_path else None
+            record.status = status
+            record.comment = comment[:2000] if comment else None
+            session.commit()
+        except Exception as db_err:
+            session.rollback()
+            logger.critical(f"Database error while updating status for {record.bin_filename}: {db_err}")
+            raise
 
     def _save_to_db(
             self,
