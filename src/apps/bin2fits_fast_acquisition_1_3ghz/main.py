@@ -19,9 +19,8 @@ def main():
     try:
         project_info = ProjectInfo()
         project_root = project_info.project_root
-        current_dir = Path(__file__).resolve().parent
         env_file = project_root / ".env"
-        app_conf_toml = current_dir / "config" / "config.toml"
+        app_conf_toml = project_root / "config" / "bin2fits_fast_1_3_app.toml"
 
         if not env_file.is_file():
             logger.critical(f".env file not found at {env_file}")
