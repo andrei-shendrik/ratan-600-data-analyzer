@@ -1,4 +1,3 @@
-import contextlib
 from pathlib import Path
 
 from sqlalchemy import select
@@ -51,7 +50,7 @@ class ObservationProcessor:
             logger.info(f"[{filename}] Processing outside archives: disable write to DB")
 
         if output_fits_file.exists() and not overwrite:
-            logger.debug(f"[{filename}] skipped: FITS file already exists (use flag --overwrite)")
+            logger.info(f"[{filename}] skipped: FITS file already exists (use flag --overwrite)")
             return
 
         # БД
@@ -68,10 +67,10 @@ class ObservationProcessor:
                     existing_record = session.scalar(stmt)
                     if existing_record:
                         if existing_record.status == ProcessingStatus.SUCCESS and not overwrite and output_fits_file.exists():
-                            logger.debug(f"[{filename}] skipped: DB status is SUCCESS (use flag --overwrite")
+                            logger.info(f"[{filename}] skipped: DB status is SUCCESS (use flag --overwrite")
                             return
                         if existing_record.status == ProcessingStatus.FAILED and not retry_failed and not overwrite:
-                            logger.debug(f"[{filename}] skipped: DB status is FAILED. Use flag --failed to retry")
+                            logger.info(f"[{filename}] skipped: DB status is FAILED. Use flag --failed to retry")
                             return
 
             # processing

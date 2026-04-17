@@ -25,7 +25,9 @@ class Bin2FitsFastAcquisitionApp:
         """
             Daemon mode (Watchdog)
         """
-        daemon = Watcher(self._obs_processor, self._settings.bin_archive)
+        daemon = Watcher(
+            obs_processor=self._obs_processor,
+            base_dir=self._settings.bin_archive)
         daemon.start()
 
     def run_cli_batch(self, args):

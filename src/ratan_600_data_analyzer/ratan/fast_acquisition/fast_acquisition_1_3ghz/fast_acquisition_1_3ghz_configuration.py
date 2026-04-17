@@ -184,6 +184,6 @@ class FastAcquisition1To3GHzConfiguration:
     def flux_dm_file(self) -> np.ndarray:
         return self._flux_dm_file
 
-project_root = ProjectInfo.find_project_root()
+project_root = ProjectInfo().project_root
 CONFIG_FILE = project_root / "src/ratan_600_data_analyzer/ratan/fast_acquisition/fast_acquisition_1_3ghz/config/fast_acquisition_1_3ghz_config.toml"
 config = FastAcquisition1To3GHzConfiguration.load(CONFIG_FILE)
