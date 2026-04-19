@@ -13,8 +13,8 @@ logger = logging.getLogger(__name__)
 
 
 class BinFileEventHandler(FileSystemEventHandler):
-    def __init__(self, obs_processor, settings):
-        self._obs_processor = obs_processor
+    def __init__(self, processing_controller, settings):
+        self._processing_controller = processing_controller
         self._settings = settings
         self._file_filter = ObservationFileFilter(self._settings.file_filters)
 
@@ -40,7 +40,7 @@ class BinFileEventHandler(FileSystemEventHandler):
         dest_path = Path(os.fsdecode(event.dest_path))
         if self._file_filter.is_valid(dest_path):
             logger.info(f"Watcher: detected new file (moved): {dest_path}")
-            self._obs_processor.process_file(
+            self._processing_controller.process_file(
                 bin_file=dest_path,
                 fits_base_dir=self._settings.fits_archive
             )
@@ -54,7 +54,7 @@ class BinFileEventHandler(FileSystemEventHandler):
             logger.info(f"Watcher: detected new file (created): {src_path}")
 
             if self._wait_for_file_to_finish_writing(src_path_str):
-                self._obs_processor.process_file(
+                self._processing_controller.process_file(
                     bin_file=src_path,
                     fits_base_dir=self._settings.fits_archive
                 )
@@ -63,10 +63,10 @@ class BinFileEventHandler(FileSystemEventHandler):
 
 
 class Watcher:
-    def __init__(self, obs_processor, settings):
+    def __init__(self, processing_controller, settings):
         self._settings = settings
         self._base_dir = settings.bin_archive.resolve()
-        self._event_handler = BinFileEventHandler(obs_processor, settings)
+        self._event_handler = BinFileEventHandler(processing_controller, settings)
         self._observer = Observer()
 
         # Словарь для хранения текущих активных подписок: { 'путь_к_папке': объект_watch }
@@ -107,14 +107,14 @@ class Watcher:
                 watch = self._active_watches[path]
                 self._observer.unschedule(watch)
                 del self._active_watches[path]
-                logger.info(f"Watcher: disabling monitoring previous month: {path}")
+                logger.info(f"Watcher: disabling monitoring directory: {path}")
 
         # 2. Подписываемся на новые месяцы (если их еще нет в активных)
         for path in target_paths:
             if path not in self._active_watches:
                 watch = self._observer.schedule(self._event_handler, path, recursive=True)
                 self._active_watches[path] = watch
-                logger.info(f"Watcher: starting monitoring new month: {path}")
+                logger.info(f"Watcher: starting monitoring directory: {path}")
 
     def start(self):
         logger.info(f"Watcher bin2fits_fast_1_3 has started")
