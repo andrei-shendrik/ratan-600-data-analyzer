@@ -5,6 +5,22 @@ from colorama import Fore, Style
 
 from ratan_600_data_analyzer.logging.logging_settings import LoggingSettings
 
+class ListLogHandler(logging.Handler):
+    """
+        Сохраняет LogRecord в память для передачи между процессами
+    """
+
+    def __init__(self):
+        super().__init__()
+        self.records: list[logging.LogRecord] = []
+
+    def emit(self, record):
+        self.format(record)
+
+        record.args = None
+        record.exc_info = None
+        self.records.append(copy.copy(record))
+
 class LoggerConfigurator:
     def __init__(self, settings: LoggingSettings):
         self._settings = settings
@@ -102,23 +118,6 @@ class LoggerConfigurator:
         handler.addFilter(lambda record: record.levelno >= level)
 
         logger.addHandler(handler)
-
-
-class ListLogHandler(logging.Handler):
-    """
-        Сохраняет LogRecord в память для передачи между процессами
-    """
-
-    def __init__(self):
-        super().__init__()
-        self.records: list[logging.LogRecord] = []
-
-    def emit(self, record):
-        self.format(record)
-
-        record.args = None
-        record.exc_info = None
-        self.records.append(copy.copy(record))
 
 class ColoredFormatter(logging.Formatter):
     """
