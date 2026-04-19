@@ -1,3 +1,4 @@
+import logging
 import os
 import time
 from datetime import datetime
@@ -6,18 +7,16 @@ from pathlib import Path
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 
-from ratan_600_data_analyzer.logging.logger_configurator import get_logger
+from apps.bin2fits_fast_acquisition_1_3ghz.services.observation_file_filter import ObservationFileFilter
 
-logger = get_logger(__name__)
+logger = logging.getLogger(__name__)
 
 
 class BinFileEventHandler(FileSystemEventHandler):
-    def __init__(self, obs_processor):
+    def __init__(self, obs_processor, settings):
         self._obs_processor = obs_processor
-        self._valid_extensions = ('.bin', '.bin.gz')
-
-    def _is_valid_file(self, path_str: str) -> bool:
-        return path_str.endswith(self._valid_extensions)
+        self._settings = settings
+        self._file_filter = ObservationFileFilter(self._settings.file_filters)
 
     def _wait_for_file_to_finish_writing(self, file_path: str, wait_time: int = 2, retries: int = 5) -> bool:
         """
@@ -38,34 +37,36 @@ class BinFileEventHandler(FileSystemEventHandler):
 
     def on_moved(self, event):
         # Событие от rsync (переименование из .temp в .bin.gz)
-        dest_path_str = os.fsdecode(event.dest_path)
-        if self._is_valid_file(dest_path_str):
-            logger.info(f"Watcher: detected new file (moved): {event.dest_path}")
+        dest_path = Path(os.fsdecode(event.dest_path))
+        if self._file_filter.is_valid(dest_path):
+            logger.info(f"Watcher: detected new file (moved): {dest_path}")
             self._obs_processor.process_file(
-                bin_file=Path(dest_path_str),
-                fits_base_dir=self._obs_processor.settings.fits_archive  # Не забудь передать fits_base_dir!
+                bin_file=dest_path,
+                fits_base_dir=self._settings.fits_archive
             )
 
     def on_created(self, event):
         # Событие от cp / ftp (создание нового файла)
         src_path_str = os.fsdecode(event.src_path)
-        if not event.is_directory and self._is_valid_file(src_path_str):
-            logger.info(f"Watcher: detected new file (created): {src_path_str}")
+        src_path = Path(src_path_str)
 
-            # Ждем, пока ОС закончит копирование файла
+        if not event.is_directory and self._file_filter.is_valid(src_path):
+            logger.info(f"Watcher: detected new file (created): {src_path}")
+
             if self._wait_for_file_to_finish_writing(src_path_str):
                 self._obs_processor.process_file(
-                    bin_file=Path(src_path_str),
-                    fits_base_dir=self._obs_processor.settings.fits_archive
+                    bin_file=src_path,
+                    fits_base_dir=self._settings.fits_archive
                 )
             else:
-                logger.error(f"Watcher: timeout waiting for file to finish writing: {event.src_path}")
+                logger.error(f"Watcher: timeout waiting for file to finish writing: {src_path_str}")
 
 
 class Watcher:
-    def __init__(self, obs_processor, base_dir: Path):
-        self._base_dir = base_dir.resolve()
-        self._event_handler = BinFileEventHandler(obs_processor)
+    def __init__(self, obs_processor, settings):
+        self._settings = settings
+        self._base_dir = settings.bin_archive.resolve()
+        self._event_handler = BinFileEventHandler(obs_processor, settings)
         self._observer = Observer()
 
         # Словарь для хранения текущих активных подписок: { 'путь_к_папке': объект_watch }

@@ -1,12 +1,12 @@
 import enum
+import logging
 import uuid
 
 from sqlalchemy import Column, String, Enum, DateTime, Uuid, create_engine
 from sqlalchemy.orm import declarative_base
 from sqlalchemy.sql import func
-from ratan_600_data_analyzer.logging.logger_configurator import get_logger
 
-logger = get_logger(__name__)
+logger = logging.getLogger(__name__)
 
 Base = declarative_base()
 

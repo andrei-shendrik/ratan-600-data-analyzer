@@ -1,8 +1,9 @@
 import tomllib
 from pathlib import Path
+from typing import List
 
 from dotenv import dotenv_values
-from pydantic import Field
+from pydantic import Field, BaseModel
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from ratan_600_data_analyzer.database.database_settings import DatabaseSettings
@@ -14,6 +15,8 @@ class Bin2FitsFastAcquisition1To3GHzSettings(BaseSettings):
     bin_archive: Path = Field(alias="FAST_ACQ_1_3GHZ_BIN_ARCHIVE")
     fits_archive: Path = Field(alias="FAST_ACQ_1_3GHZ_FITS_ARCHIVE")
     logging_settings: LoggingSettings
+
+    file_filters: FileFilterSettings
 
     model_config = SettingsConfigDict(extra="ignore")
 
@@ -32,9 +35,15 @@ class Bin2FitsFastAcquisition1To3GHzSettings(BaseSettings):
         log_dict["console_output"] = (env_data.get("BIN2FITS_FAST_ACQ_1_3GHZ_CONSOLE_OUTPUT") or "True").lower() in ("true",
                                                                                                                  "1",
                                                                                                                  "yes")
+        filters_dict = toml_data.get("file_filters", {})
 
         return cls(
             database_settings=DatabaseSettings(**env_data),
-            logging_settings=LoggingSettings(**log_dict),  # Передаем собранный словарь
+            logging_settings=LoggingSettings(**log_dict),
+            file_filters=FileFilterSettings(**filters_dict),
             **env_data
         )
+
+class FileFilterSettings(BaseModel):
+    allowed_patterns: List[str] = Field(default_factory=list)
+    forbidden_patterns: List[str] = Field(default_factory=list)

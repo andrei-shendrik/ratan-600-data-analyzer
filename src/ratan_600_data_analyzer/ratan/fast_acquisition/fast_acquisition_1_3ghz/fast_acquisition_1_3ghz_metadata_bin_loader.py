@@ -1,4 +1,5 @@
 import copy
+import logging
 import sys
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -11,7 +12,6 @@ import astropy.units as u
 from astropy.coordinates import SkyCoord, AltAz
 from astropy.time import Time
 
-from ratan_600_data_analyzer.logging.logger_configurator import get_logger
 from ratan_600_data_analyzer.ratan.coordinate_axes import CoordinateAxes
 from ratan_600_data_analyzer.ratan.data_receiver import DataReceiver
 from ratan_600_data_analyzer.ratan.fast_acquisition.fast_acquisition_1_3ghz.desc_reader import DescReader
@@ -27,7 +27,7 @@ from ratan_600_data_analyzer.ratan.polarization_type import PolarizationType
 from ratan_600_data_analyzer.ratan.ratan_metadata_loader import RatanMetadataLoader
 from ratan_600_data_analyzer.utils.file_utils import FileUtils
 
-logger = get_logger(__name__)
+logger = logging.getLogger(__name__)
 
 class FastAcquisition1To3GHzMetadataBinLoader(RatanMetadataLoader):
 

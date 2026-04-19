@@ -1,8 +1,8 @@
+import logging
+
 from sqlalchemy import create_engine, inspect, text
 
-from ratan_600_data_analyzer.logging.logger_configurator import get_logger
-
-logger = get_logger(__name__)
+logger = logging.getLogger(__name__)
 
 def check_db(app_settings):
     db_url = app_settings.database_settings.db_url

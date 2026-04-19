@@ -1,10 +1,10 @@
 import copy
+import logging
 import math
 from datetime import datetime, timezone
 
 import numpy as np
 
-from ratan_600_data_analyzer.logging.logger_configurator import get_logger
 from ratan_600_data_analyzer.ratan.axis import Axis
 from ratan_600_data_analyzer.ratan.data_layout import DataLayout
 from ratan_600_data_analyzer.fits.fits_header_reader import FitsHeaderReader
@@ -15,7 +15,7 @@ from ratan_600_data_analyzer.ratan.sspc.sspc_constants import SSPC_16_START_DATE
 from ratan_600_data_analyzer.ratan.sspc.sspc_metadata import SSPCMetadata
 from ratan_600_data_analyzer.utils.date_utils import DateUtils
 
-logger = get_logger(__name__)
+logger = logging.getLogger(__name__)
 
 class SSPCMetadataFitsLoader(RatanMetadataLoader):
     """
