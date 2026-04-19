@@ -10,6 +10,10 @@ from ratan_600_data_analyzer.database.database_settings import DatabaseSettings
 from ratan_600_data_analyzer.logging.logging_settings import LoggingSettings
 
 
+class FileFilterSettings(BaseModel):
+    allowed_patterns: List[str] = Field(default_factory=list)
+    forbidden_patterns: List[str] = Field(default_factory=list)
+
 class Bin2FitsFastAcquisition1To3GHzSettings(BaseSettings):
     database_settings: DatabaseSettings
     bin_archive: Path = Field(alias="FAST_ACQ_1_3GHZ_BIN_ARCHIVE")
@@ -43,7 +47,3 @@ class Bin2FitsFastAcquisition1To3GHzSettings(BaseSettings):
             file_filters=FileFilterSettings(**filters_dict),
             **env_data
         )
-
-class FileFilterSettings(BaseModel):
-    allowed_patterns: List[str] = Field(default_factory=list)
-    forbidden_patterns: List[str] = Field(default_factory=list)
