@@ -23,6 +23,9 @@ class Bin2FitsFastAcquisitionApp:
             settings=self._settings
         )
 
+        # восстановление зависших статусов DB 'processing'
+        self._processing_controller.recover_stuck_files(timeout_minutes=10)
+
     def run_daemon(self):
         """
             Daemon mode (Watchdog)

@@ -64,6 +64,7 @@ class BinFileEventHandler(FileSystemEventHandler):
 
 class Watcher:
     def __init__(self, processing_controller, settings):
+        self._processing_controller = processing_controller
         self._settings = settings
         self._base_dir = settings.bin_archive.resolve()
         self._event_handler = BinFileEventHandler(processing_controller, settings)
@@ -126,6 +127,9 @@ class Watcher:
                 # Раз в 10 минут проверка, не сменился ли месяц
                 # и не появились ли нужные папки на диске
                 self._update_watches()
+
+                # исправление зависших статусов processing
+                self._processing_controller.recover_stuck_files(timeout_minutes=10)
                 time.sleep(600)
 
         except KeyboardInterrupt:

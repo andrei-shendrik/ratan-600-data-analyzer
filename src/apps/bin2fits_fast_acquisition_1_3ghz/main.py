@@ -4,7 +4,6 @@ import sys
 from apps.bin2fits_fast_acquisition_1_3ghz.bin2fits_fast_acquisition_1_3ghz_app import Bin2FitsFastAcquisitionApp
 from apps.bin2fits_fast_acquisition_1_3ghz.cli.cli_parser import CliParser
 from apps.bin2fits_fast_acquisition_1_3ghz.infrastructure.database import init_db
-from apps.bin2fits_fast_acquisition_1_3ghz.scripts.check_db import check_db
 from apps.bin2fits_fast_acquisition_1_3ghz.settings.bin2fits_fast_acquisition_1_3ghz_settings import \
     Bin2FitsFastAcquisition1To3GHzSettings
 from ratan_600_data_analyzer.common.project_info import ProjectInfo
@@ -46,9 +45,15 @@ def main():
     init_db(app_settings.database_settings.db_url)
 
     # test DB
-    # log_level = app_settings.logging_settings.log_level
-    # if log_level == "DEBUG":
-    #     check_db(app_settings)
+    log_level = app_settings.logging_settings.log_level
+    if log_level == "DEBUG":
+        # check_db(app_settings)
+        from apps.bin2fits_fast_acquisition_1_3ghz.scripts.check_db import check_database, show_processing_files, \
+            show_failed_files
+
+        check_database(app_settings)  # Покажет сколько всего записей
+        show_processing_files(app_settings)  # Покажет, есть ли сейчас активные/зависшие процессы
+        show_failed_files(app_settings)  # Покажет, на чем падали последние конвертации
 
     # console parser
     cli_parser = CliParser()
