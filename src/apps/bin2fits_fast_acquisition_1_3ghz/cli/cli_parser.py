@@ -12,7 +12,7 @@ class CliParser:
     def __init__(self):
         self.parser = argparse.ArgumentParser(
             prog="bin2fits_fast_1_3",
-            description="Observation Conversion Utility from .bin to .fits fo Fast Acquisition 1-3GHz"
+            description="Observation Conversion Utility from .bin to .fits for Fast Acquisition 1-3GHz"
         )
         self._setup_arguments()
 

@@ -7,7 +7,7 @@ where = ["src"]
 
 [project]
 name = "ratan-600-data-analyzer"
-version = "1.2.3"
+version = "1.2.4"
 requires-python = ">= 3.12"
 readme = "README.md"
 description = ""
@@ -29,7 +29,9 @@ dependencies = [
     "python-dotenv",
     "sqlalchemy",
     "psycopg2-binary",
-    "watchdog"
+    "watchdog",
+    "psutil",
+    "filelock"
 ]
 
 [project.optional-dependencies]
@@ -43,5 +45,11 @@ ratan_600_data_analyzer = [
     "ratan/fast_acquisition/fast_acquisition_1_3ghz/config/*.toml",
     "ratan/fast_acquisition/fast_acquisition_1_3ghz/data/*.dat"
 ]
+
+[tool.deptry]
+known_first_party = ["ratan_600_data_analyzer", "apps"]
+
+[tool.deptry.per_rule_ignores]
+DEP002 = ["psycopg2-binary"]
 
 

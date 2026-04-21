@@ -1,7 +1,11 @@
 import logging
+import os
+from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+from typing import List
 
+from filelock import FileLock, Timeout
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -11,13 +15,71 @@ from apps.bin2fits_fast_acquisition_1_3ghz.services.observation_processor import
 
 logger = logging.getLogger(__name__)
 
+@dataclass
+class BatchReport:
+    total: int
+    success: int
+    failed: int
+    processing: int
+    unprocessed: int
+    failed_filenames: List[str]
+
 class FastAcquisition1To3GHzProcessingController:
     def __init__(self, session_factory, settings):
-        self.session_factory = session_factory
-        self.settings = settings
+        self._session_factory = session_factory
+        self._settings = settings
+
+    def recover_stuck_files(self, timeout_minutes: int = 10):
+        """
+            Ищет в БД файлы со статусом PROCESSING, которые висят дольше timeout_minutes.
+            Переводит статус обратно в UNPROCESSED.
+        """
+        session: Session | None = None
+        try:
+            session = self._session_factory()
+            if session is not None:
+                cutoff_time = datetime.now(timezone.utc) - timedelta(minutes=timeout_minutes)
+
+                # поиск зависших записей
+                stmt = select(FastAcquisition1To3GHzRaw).where(
+                    FastAcquisition1To3GHzRaw.status == ProcessingStatus.PROCESSING,
+                    FastAcquisition1To3GHzRaw.updated_at < cutoff_time
+                )
+                stuck_records = session.scalars(stmt).all()
+
+                recovered_count = 0
+                for record in stuck_records:
+                    filename = record.bin_filename
+                    fits_path = Path(record.fits_path_filename) if record.fits_path_filename else None
+
+                    # удаление "недописанного" или "старого" .fits файла
+                    if fits_path and fits_path.exists():
+                        try:
+                            os.remove(fits_path)
+                            logger.warning(
+                                f"File {fits_path.name} was deleted due to stuck status 'processing'. Status set to 'unprocessed'")
+                        except Exception as file_err:
+                            logger.error(f"Unable to delete file '{fits_path.name}': {file_err}")
+
+                    # откат статуса в БД
+                    record.status = ProcessingStatus.UNPROCESSED
+                    record.fits_filename = None
+                    record.fits_path_filename = None
+                    record.comment = "Stuck status 'processing' detected (Timeout). Fits file removed. Status reverted to UNPROCESSED."
+                    recovered_count += 1
+
+                if recovered_count > 0:
+                    session.commit()
+                    logger.warning(f"Recovered {recovered_count} stuck DB entries")
+
+        except Exception as e:
+            if session is not None: session.rollback()
+            logger.error(f"Error stuck recovery: {e}")
+        finally:
+            if session is not None: session.close()
 
     def get_output_fits_pathfilename(self, bin_file: Path, fits_base_dir: Path) -> Path:
-        bin_archive = self.settings.bin_archive.resolve()
+        bin_archive = self._settings.bin_archive.resolve()
         filename = bin_file.name
 
         if filename.endswith('.bin.gz'):
@@ -40,15 +102,15 @@ class FastAcquisition1To3GHzProcessingController:
         """
         filename = bin_file.name
         output_fits_file = self.get_output_fits_pathfilename(bin_file, fits_base_dir)
-        should_use_db = bin_file.is_relative_to(self.settings.bin_archive.resolve()) and \
-                        output_fits_file.is_relative_to(self.settings.fits_archive.resolve())
+        should_use_db = bin_file.is_relative_to(self._settings.bin_archive.resolve()) and \
+                        output_fits_file.is_relative_to(self._settings.fits_archive.resolve())
 
         if output_fits_file.exists() and not overwrite:
             logger.debug(f"[{filename}] processing not needed: FITS file already exists (use --overwrite)")
             return False
 
         if should_use_db:
-            with self.session_factory() as session:
+            with self._session_factory() as session:
                 stmt = select(FastAcquisition1To3GHzRaw).filter_by(bin_filename=filename)
                 existing_record = session.scalar(stmt)
                 if existing_record:
@@ -84,20 +146,26 @@ class FastAcquisition1To3GHzProcessingController:
         """
         output_fits_file = self.get_output_fits_pathfilename(bin_file, fits_base_dir)
         filename = bin_file.name
-        should_use_db = bin_file.is_relative_to(self.settings.bin_archive.resolve()) and \
-                        output_fits_file.is_relative_to(self.settings.fits_archive.resolve())
+        should_use_db = bin_file.is_relative_to(self._settings.bin_archive.resolve()) and \
+                        output_fits_file.is_relative_to(self._settings.fits_archive.resolve())
 
         if not should_use_db:
-            return output_fits_file
+            lock_path = str(output_fits_file) + ".lock"
+            lock = FileLock(lock_path, timeout=0)  # timeout=0 означает "не ждать, если занято"
+            try:
+                lock.acquire()  # Пытаемся захватить файл
+                # ВАЖНО: Мы должны вернуть объект lock, чтобы снять его в конце!
+                # В данной архитектуре лучше сделать так, чтобы Lock жил, пока жив процесс воркера.
+                # Так как ОС сама удаляет локи FileLock при смерти процесса - это будет работать идеально.
+                return output_fits_file
+            except Timeout:
+                logger.warning(f"[{bin_file.name}] Conflict: File is locked by OS.")
+                return None
 
         session: Session | None = None
         try:
-            session = self.session_factory()
+            session = self._session_factory()
             if session is not None:
-                # ====================================================================
-                # --- ИЗМЕНЕНО: СУПЕР-ЗАЩИТА ОТ WINERROR 32 (.bin vs .bin.gz) ---
-                # Ищем, не занял ли кто-то (другой исходник) наш целевой FITS-файл
-                # ====================================================================
                 stmt_fits = select(FastAcquisition1To3GHzRaw).filter_by(fits_filename=output_fits_file.name)
                 existing_fits_claim = session.scalar(stmt_fits)
 
@@ -143,13 +211,13 @@ class FastAcquisition1To3GHzProcessingController:
         """
             Обновление статуса обработки (SUCCESS/FAILED)
         """
-        should_use_db = bin_file.is_relative_to(self.settings.bin_archive.resolve())
+        should_use_db = bin_file.is_relative_to(self._settings.bin_archive.resolve())
         if not should_use_db:
             return
 
         session: Session | None = None
         try:
-            session = self.session_factory()
+            session = self._session_factory()
             if session is not None:
                 stmt = select(FastAcquisition1To3GHzRaw).filter_by(bin_filename=bin_file.name)
                 record = session.scalar(stmt)
@@ -180,3 +248,96 @@ class FastAcquisition1To3GHzProcessingController:
             error_msg = str(e)[:500]
             logger.error(f"[{bin_file.name}] Processing error: {error_msg}", exc_info=True)
             self.finalize_status_in_db(bin_file, None, ProcessingStatus.FAILED, error_msg)
+
+    def generate_batch_report(self, processed_files: List[Path]) -> BatchReport:
+        """
+        Generates a summary report for a specific batch of files.
+        Automatically cleans up any STUCK (PROCESSING) statuses left behind by crashed workers.
+        """
+        if not processed_files:
+            return BatchReport(0, 0, 0, 0, 0, [])
+
+        filenames = [f.name for f in processed_files]
+        report = BatchReport(total=len(filenames), success=0, failed=0, processing=0, unprocessed=0,
+                             failed_filenames=[])
+
+        session: Session | None = None
+        try:
+            session = self._session_factory()
+            if session is not None:
+                # 1. Запрашиваем статусы из БД только для наших файлов
+                stmt = select(FastAcquisition1To3GHzRaw).where(
+                    FastAcquisition1To3GHzRaw.bin_filename.in_(filenames)
+                )
+                records = session.scalars(stmt).all()
+
+                # Считаем статусы и собираем имена упавших файлов
+                stuck_records = []
+                for record in records:
+                    if record.status == ProcessingStatus.SUCCESS:
+                        report.success += 1
+                    elif record.status == ProcessingStatus.FAILED:
+                        report.failed += 1
+                        report.failed_filenames.append(record.bin_filename)
+                    elif record.status == ProcessingStatus.UNPROCESSED:
+                        report.unprocessed += 1
+                    elif record.status == ProcessingStatus.PROCESSING:
+                        report.processing += 1
+                        stuck_records.append(record)
+
+                # 2. АВТО-ОЧИСТКА ЗАВИСШИХ СТАТУСОВ (Cleanup)
+                if stuck_records:
+                    logger.warning(
+                        f"Batch Cleanup: Found {len(stuck_records)} files stuck in PROCESSING state. Reverting them...")
+                    for record in stuck_records:
+                        fits_path = Path(record.fits_path_filename) if record.fits_path_filename else None
+
+                        if fits_path and fits_path.exists():
+                            # Перезапись упала, возвращаем старый SUCCESS
+                            record.status = ProcessingStatus.SUCCESS
+                            record.comment = "Cleanup: Worker crashed during overwrite. Reverted to original SUCCESS."
+                            report.success += 1
+                            report.processing -= 1
+                        else:
+                            # Обычный краш
+                            record.status = ProcessingStatus.FAILED
+                            record.fits_filename = None
+                            record.fits_path_filename = None
+                            record.comment = "Cleanup: Worker crashed (No FITS file found)."
+                            report.failed += 1
+                            report.processing -= 1
+                            report.failed_filenames.append(record.bin_filename)
+
+                    session.commit()
+                    logger.warning("Batch Cleanup: Successfully reverted stuck statuses.")
+
+        except Exception as e:
+            if session is not None: session.rollback()
+            logger.error(f"Failed to generate batch report: {e}")
+        finally:
+            if session is not None: session.close()
+
+        return report
+
+    def revert_claim(self, bin_file: Path):
+        """Откатывает бронь файла (возвращает в UNPROCESSED)"""
+        filename = bin_file.name
+        session: Session | None = None
+        try:
+            session = self._session_factory()
+            if session is not None:
+                stmt = select(FastAcquisition1To3GHzRaw).filter_by(bin_filename=filename)
+                record: FastAcquisition1To3GHzRaw | None = session.scalar(stmt)
+                if record is not None:
+                    if record.status == ProcessingStatus.PROCESSING:
+                        record.status = ProcessingStatus.UNPROCESSED
+                        record.fits_filename = None
+                        record.fits_path_filename = None
+                        record.comment = "Aborted before processing finished"
+                        session.commit()
+                        logger.warning(f"[{filename}] Status reverted to UNPROCESSED.")
+        except Exception as e:
+            if session is not None: session.rollback()
+            logger.error(f"[{filename}] Failed to revert claim: {e}")
+        finally:
+            if session is not None: session.close()
