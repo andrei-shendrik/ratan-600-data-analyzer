@@ -2,7 +2,6 @@ import concurrent.futures
 import logging
 import re
 import signal
-import threading
 from datetime import datetime
 from pathlib import Path
 
@@ -55,12 +54,13 @@ class CliBatchHandler:
         active_workers = min(workers_count, num_files_to_process)
         is_multi_processing = active_workers > 1
 
-        mode = f"Parallel ({active_workers} workers)" if is_multi_processing else "single-processing (1 worker)"
+        mode = f"parallel ({active_workers} workers)" if is_multi_processing else "single-processing (1 worker)"
         logger.info(f"Starting processing of {num_files_to_process} files in {mode} mode...")
 
         if not is_multi_processing:
             self._run_sequential(files_to_process, fits_files_dir, args.overwrite, num_files_to_process)
         else:
+            logger.info(f"Please wait for processes messages...")
             self._run_parallel(files_to_process, fits_files_dir, args.overwrite, num_files_to_process, active_workers)
 
         logger.info("Processing task finished")
@@ -126,116 +126,101 @@ class CliBatchHandler:
 
     def _run_parallel(self, files_to_process, fits_files_dir, overwrite, total_files, active_workers):
 
-        # семафор
-        queue_semaphore = threading.Semaphore(active_workers * 2)
+        claimed_files = set()
         future_to_file = {}
-        claimed_files = set()  # Список файлов, которые мы забронировали в БД
+        pending_futures = set()
 
-        # Добавляем callback для освобождения семафора ---
-        def task_done_callback(fut):
-            queue_semaphore.release()
+        file_iterator = iter(enumerate(files_to_process, 1))
+        max_in_queue = active_workers * 2
+        processed_count = 0
+        main_logger = logging.getLogger()
 
-        with concurrent.futures.ProcessPoolExecutor(max_workers=active_workers,
-                                                    initializer=init_worker) as executor:
+        with concurrent.futures.ProcessPoolExecutor(max_workers=active_workers, initializer=init_worker) as executor:
 
-            for file_index, file_path in enumerate(files_to_process, 1):
-
-                # Проверка: если нажали Ctrl+C, ПРЕКРАЩАЕМ брать новые файлы
+            def submit_next_tasks():
                 if self._shutdown_requested:
-                    logger.warning("Loop interruption: new files will not be processed")
-                    break
+                    return
 
-                # Умный Acquire: ждем место в очереди, но проверяем Ctrl+C каждую секунду
-                acquired = False
-                while not acquired:
-                    if self._shutdown_requested:
-                        break  # Выходим из цикла ожидания
-                    # Пытаемся занять семафор (таймаут 1 сек)
-                    acquired = queue_semaphore.acquire(timeout=1.0)
-
-                # Если вышли из-за Ctrl+C - завершаем добавление файлов
-                if self._shutdown_requested:
-                    break
-
-                # 1. ЖДЕМ СВОБОДНОГО МЕСТА В ПУЛЕ (Блокировка главного потока)
-                # queue_semaphore.acquire()
-
-                # 2. Место появилось! Только теперь бронируем файл в БД
-                out_fits = self._processing_controller.claim_file_for_processing(file_path, fits_files_dir)
-                if not out_fits:
-                    queue_semaphore.release()  # Если файл не удалось забронировать, возвращаем "билетик"
-                    continue
-
-                claimed_files.add(file_path)
-
-                future = executor.submit(parallel_worker, file_path, out_fits, overwrite, self._settings, file_index,
-                                         total_files)
-                future.add_done_callback(task_done_callback)
-                future_to_file[future] = file_path
-
-                # 3. Отправляем в пул
-                # future = executor.submit(parallel_worker, file_path, out_fits, overwrite, self._settings, file_index,
-                #                          total_files)
-                #
-                # # 4. Привязываем callback, который освободит семафор, когда воркер закончит работу
-                # future.add_done_callback(task_done_callback)
-                #
-                # future_to_file[future] = file_path
-
-            # for file_index, file_path in enumerate(files_to_process, 1):
-            #     out_fits = self._processing_controller.claim_file_for_processing(file_path, fits_files_dir)
-            #     if not out_fits:
-            #         continue
-            #
-            #     future = executor.submit(parallel_worker, file_path, out_fits, overwrite, self._settings, file_index,
-            #                              total_files)
-            #     future_to_file[future] = file_path
-
-            processed_count = 0
-            main_logger = logging.getLogger()
-            try:
-                for future in concurrent.futures.as_completed(future_to_file):
-                    processed_count += 1
-                    original_file = future_to_file[future]
-
-                    # Файл завершил работу (успешно или с ошибкой). Удаляем из "висящих"
-                    if original_file in claimed_files:
-                        claimed_files.remove(original_file)
-
+                while len(pending_futures) < max_in_queue:
                     try:
-                        res: WorkerResult = future.result()
-                        for record in res.log_records:
-                            main_logger.handle(record)
+                        # ИЗМЕНЕНО: Имена переменных сделаны специфичными для этой функции
+                        task_index, task_file_path = next(file_iterator)
+                    except StopIteration:
+                        break
 
-                        status = ProcessingStatus.SUCCESS if res.success else ProcessingStatus.FAILED
-                        self._processing_controller.finalize_status_in_db(
-                            original_file,
-                            self._processing_controller.get_output_fits_pathfilename(original_file,
-                                                                                     fits_files_dir) if res.success else None,
-                            status,
-                            res.error_msg
-                        )
+                    out_fits = self._processing_controller.claim_file_for_processing(task_file_path, fits_files_dir)
+                    if not out_fits:
+                        continue
 
-                    except Exception as exc:
-                        logger.critical(f"FATAL Worker Crash on {original_file.name}: {exc}")
-                        self._processing_controller.finalize_status_in_db(original_file, None, ProcessingStatus.FAILED,
-                                                                          str(exc)[:500])
+                    claimed_files.add(task_file_path)
+
+                    # ИЗМЕНЕНО: Назвали переменную new_future
+                    new_future = executor.submit(parallel_worker, task_file_path, out_fits, overwrite, self._settings,
+                                                 task_index, total_files)
+
+                    # ИЗМЕНЕНО: Используем новые имена переменных
+                    future_to_file[new_future] = task_file_path
+                    pending_futures.add(new_future)
+
+            # 1. ПЕРВИЧНОЕ ЗАПОЛНЕНИЕ ОЧЕРЕДИ
+            submit_next_tasks()
+
+            # 2. ГЛАВНЫЙ ЦИКЛ
+            try:
+                while pending_futures:
+                    # ИЗМЕНЕНО: done переименовано в done_futures для ясности
+                    done_futures, pending_futures = concurrent.futures.wait(
+                        pending_futures,
+                        timeout=1.0,
+                        return_when=concurrent.futures.FIRST_COMPLETED
+                    )
+
+                    if self._shutdown_requested:
+                        logger.warning(
+                            "Loop interruption: new files will not be processed. Waiting for running tasks to finish...")
+
+                    # ИЗМЕНЕНО: Переменная цикла теперь completed_future
+                    for completed_future in done_futures:
+                        processed_count += 1
+                        original_file = future_to_file[completed_future]
+
+                        if original_file in claimed_files:
+                            claimed_files.remove(original_file)
+
+                        try:
+                            # ИЗМЕНЕНО: Вызов результата из completed_future
+                            res: WorkerResult = completed_future.result()
+
+                            for record in res.log_records:
+                                main_logger.handle(record)
+
+                            status = ProcessingStatus.SUCCESS if res.success else ProcessingStatus.FAILED
+                            self._processing_controller.finalize_status_in_db(
+                                original_file,
+                                self._processing_controller.get_output_fits_pathfilename(original_file,
+                                                                                         fits_files_dir) if res.success else None,
+                                status,
+                                res.error_msg
+                            )
+
+                        except Exception as exc:
+                            logger.critical(f"FATAL Worker Crash on {original_file.name}: {exc}")
+                            self._processing_controller.finalize_status_in_db(original_file, None,
+                                                                              ProcessingStatus.FAILED, str(exc)[:500])
+
+                    # 3. ДОКИДЫВАЕМ НОВЫЕ ЗАДАЧИ ВМЕСТО ЗАВЕРШЕННЫХ
+                    if not self._shutdown_requested:
+                        submit_next_tasks()
+
             except KeyboardInterrupt:
                 logger.warning("Force termination of the process pool")
             finally:
-                # =================================================================
-                # 3. ОТКАТ (ROLLBACK) ДЛЯ ОТМЕНЕННЫХ ЗАДАЧ
-                # =================================================================
-                # Если после завершения пула в списке claimed_files остались файлы -
-                # это значит, что мы их забронировали (статус PROCESSING), но задача
-                # была отменена из-за Ctrl+C. Мы ОБЯЗАНЫ вернуть их в UNPROCESSED.
+                # 4. ОТКАТ (ROLLBACK) ДЛЯ ОТМЕНЕННЫХ ЗАДАЧ
                 if claimed_files:
-                    logger.warning(f"For {len(claimed_files)} return status UNPROCESSED...")
+                    logger.warning(f"For {len(claimed_files)} files returning status UNPROCESSED...")
                     for file_path in claimed_files:
                         self._processing_controller.revert_claim(file_path)
 
-                # Мягко гасим пулл процессов, отменяя те задачи,
-                # которые стояли в микро-очереди, но еще не начали выполняться
                 executor.shutdown(wait=True, cancel_futures=True)
 
 
