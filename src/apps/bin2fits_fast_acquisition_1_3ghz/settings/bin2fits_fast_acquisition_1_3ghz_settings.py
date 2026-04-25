@@ -9,6 +9,9 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 from ratan_600_data_analyzer.database.database_settings import DatabaseSettings
 from ratan_600_data_analyzer.logging.logging_settings import LoggingSettings
 
+class ResourceSettings(BaseModel):
+    worker_max_ram_gb: float = Field(alias="BIN2FITS_FAST_ACQ_1_3GHZ_WORKER_MAX_RAM_GB", default=8.0)
+    min_free_ram_gb: float = Field(alias="BIN2FITS_FAST_ACQ_1_3GHZ_MIN_FREE_RAM_GB", default=4.0)
 
 class FileFilterSettings(BaseModel):
     allowed_patterns: List[str] = Field(default_factory=list)
@@ -21,6 +24,7 @@ class Bin2FitsFastAcquisition1To3GHzSettings(BaseSettings):
     logging_settings: LoggingSettings
 
     file_filters: FileFilterSettings
+    resources: ResourceSettings
 
     model_config = SettingsConfigDict(extra="ignore")
 
@@ -45,5 +49,7 @@ class Bin2FitsFastAcquisition1To3GHzSettings(BaseSettings):
             database_settings=DatabaseSettings(**env_data),
             logging_settings=LoggingSettings(**log_dict),
             file_filters=FileFilterSettings(**filters_dict),
+            resources=ResourceSettings(**env_data),
+
             **env_data
         )
