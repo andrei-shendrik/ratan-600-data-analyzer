@@ -10,12 +10,14 @@ from apps.bin2fits_fast_acquisition_1_3ghz.services.observation_file_filter impo
 from apps.bin2fits_fast_acquisition_1_3ghz.services.observation_processor import \
     FastAcquisition1To3GHzObservationProcessor
 from apps.bin2fits_fast_acquisition_1_3ghz.services.parallel_worker import WorkerResult, parallel_worker, init_worker
+from apps.bin2fits_fast_acquisition_1_3ghz.services.process_profiler import ProcessProfiler
 
 logger = logging.getLogger(__name__)
 
 
 class CliBatchHandler:
     def __init__(self, processing_controller, settings):
+        self._max_recorded_ram_mb = None
         self._processing_controller = processing_controller
         self._settings = settings
         self._file_filter = ObservationFileFilter(self._settings.file_filters)
@@ -25,73 +27,79 @@ class CliBatchHandler:
         signal.signal(signal.SIGTERM, self._handle_shutdown)
 
     def execute(self, args):
-        bin_files_dir = Path(args.bin_dir).resolve() if args.bin_dir else self._settings.bin_archive.resolve()
-        fits_files_dir = Path(args.fits_dir).resolve() if args.fits_dir else self._settings.fits_archive.resolve()
+        with ProcessProfiler() as batch_profiler:
+            self._max_recorded_ram_mb = 0.0
+            
+            bin_files_dir = Path(args.bin_dir).resolve() if args.bin_dir else self._settings.bin_archive.resolve()
+            fits_files_dir = Path(args.fits_dir).resolve() if args.fits_dir else self._settings.fits_archive.resolve()
 
-        if not bin_files_dir.exists():
-            logger.error(f"Bin dir doesnt exist: {bin_files_dir}")
-            return
+            if not bin_files_dir.exists():
+                logger.error(f"Bin dir doesnt exist: {bin_files_dir}")
+                return
 
-        logger.debug(f"Search for .bin files in directory: {bin_files_dir}")
-        all_found_files = list(self._find_files(bin_files_dir, args))
+            logger.debug(f"Search for .bin files in directory: {bin_files_dir}")
+            all_found_files = list(self._find_files(bin_files_dir, args))
 
-        # Предварительная фильтрация
-        files_to_process = []
-        for file_path in all_found_files:
-            # отклонение по имени файла
-            if not self._file_filter.is_valid(file_path):
-                continue
+            # Предварительная фильтрация
+            files_to_process = []
+            for file_path in all_found_files:
+                # отклонение по имени файла
+                if not self._file_filter.is_valid(file_path):
+                    continue
 
-            if self._processing_controller.is_needed_to_process(file_path, fits_files_dir, args.overwrite, args.failed):
-                files_to_process.append(file_path)
+                if self._processing_controller.is_needed_to_process(file_path, fits_files_dir, args.overwrite, args.failed):
+                    files_to_process.append(file_path)
 
-        num_files_to_process = len(files_to_process)
-        if num_files_to_process == 0:
-            logger.info("No files require processing.")
-            return
+            num_files_to_process = len(files_to_process)
+            if num_files_to_process == 0:
+                logger.info("No files require processing.")
+                return
 
-        workers_count = args.workers if args.workers is not None else 1
-        active_workers = min(workers_count, num_files_to_process)
-        is_multi_processing = active_workers > 1
+            workers_count = args.workers if args.workers is not None else 1
+            active_workers = min(workers_count, num_files_to_process)
+            is_multi_processing = active_workers > 1
 
-        mode = f"parallel ({active_workers} workers)" if is_multi_processing else "single-processing (1 worker)"
-        logger.info(f"Starting processing of {num_files_to_process} files in {mode} mode...")
+            mode = f"parallel ({active_workers} workers)" if is_multi_processing else "single-processing (1 worker)"
+            logger.info(f"Starting processing of {num_files_to_process} files in {mode} mode...")
 
-        if not is_multi_processing:
-            self._run_sequential(files_to_process, fits_files_dir, args.overwrite, num_files_to_process)
-        else:
-            logger.info(f"Please wait for processes messages...")
-            self._run_parallel(files_to_process, fits_files_dir, args.overwrite, num_files_to_process, active_workers)
+            if not is_multi_processing:
+                self._run_sequential(files_to_process, fits_files_dir, args.overwrite, num_files_to_process)
+            else:
+                logger.info(f"Please wait for processes messages...")
+                self._run_parallel(files_to_process, fits_files_dir, args.overwrite, num_files_to_process, active_workers)
 
-        logger.info("Processing task finished")
+            logger.info("Processing task finished")
 
-        # report
-        logger.info("=== Summary report ===")
+            # report
+            logger.info("=== Summary report ===")
 
-        report = self._processing_controller.generate_batch_report(files_to_process)
+            report = self._processing_controller.generate_batch_report(files_to_process)
 
-        logger.info(f"Total files processed : {report.total}")
-        logger.info(f"SUCCESS               : {report.success}")
+            logger.info(f"Total files processed : {report.total}")
+            logger.info(f"SUCCESS               : {report.success}")
 
-        if report.failed > 0:
-            logger.info(f"FAILED                : {report.failed}")
-        else:
-            logger.info(f"FAILED                : 0")
+            if report.failed > 0:
+                logger.info(f"FAILED                : {report.failed}")
+            else:
+                logger.info(f"FAILED                : 0")
 
-        if report.unprocessed > 0:
-            logger.warning(f"UNPROCESSED (Skipped) : {report.unprocessed} (Check logs for database or IO locks)")
+            if report.unprocessed > 0:
+                logger.warning(f"UNPROCESSED (Skipped) : {report.unprocessed} (Check logs for database or IO locks)")
 
-        if report.processing > 0:
-            logger.critical(
-                f"STUCK (Processing)    : {report.processing} (CRITICAL: Database transaction failed during cleanup!)")
+            if report.processing > 0:
+                logger.critical(
+                    f"STUCK (Processing)    : {report.processing} (CRITICAL: Database transaction failed during cleanup!)")
 
-        if report.failed > 0 and logger.isEnabledFor(logging.DEBUG):
-            logger.info("--- FAILED FILES LIST ---")
-            for fname in report.failed_filenames:
-                logger.info(f"[{fname}] status: FAILED")
-            logger.info("-------------------------")
+            if report.failed > 0 and logger.isEnabledFor(logging.DEBUG):
+                logger.info("--- FAILED FILES LIST ---")
+                for fname in report.failed_filenames:
+                    logger.info(f"[{fname}] status: FAILED")
+                logger.info("-------------------------")
 
-        logger.info("=== End report ===")
+            logger.info(f"Total Task Time      : {batch_profiler.formatted_time}")
+            logger.info(f"Peak RAM used by Worker  : {self._max_recorded_ram_mb:.1f} MB")
+
+            logger.info("=== End report ===")
 
     def _run_sequential(self, files_to_process, fits_files_dir, overwrite, total_files):
         processed_count = 0
@@ -109,8 +117,13 @@ class CliBatchHandler:
             success = False
             error_msg = ""
             try:
-                FastAcquisition1To3GHzObservationProcessor.execute(file_path, out_fits, overwrite)
+                with ProcessProfiler() as profiler:
+                    FastAcquisition1To3GHzObservationProcessor.execute(file_path, out_fits, overwrite)
                 success = True
+                logger.info(
+                    f"[{filename}] Stats -> Time: {profiler.formatted_time} | Peak RAM: {profiler.peak_memory_mb:.1f} MB")
+                if profiler.peak_memory_mb > self._max_recorded_ram_mb:
+                    self._max_recorded_ram_mb = profiler.peak_memory_mb
             except Exception as exc:
                 error_msg = str(exc)[:500]
                 logger.error(f"[{filename}] Fatal Error: {error_msg}", exc_info=True)
@@ -135,7 +148,12 @@ class CliBatchHandler:
         processed_count = 0
         main_logger = logging.getLogger()
 
-        with concurrent.futures.ProcessPoolExecutor(max_workers=active_workers, initializer=init_worker) as executor:
+        max_ram_limit = self._settings.resources.worker_max_ram_gb
+
+        with concurrent.futures.ProcessPoolExecutor(
+                max_workers=active_workers,
+                initializer=init_worker,
+                initargs=(max_ram_limit,)) as executor:
 
             def submit_next_tasks():
                 if self._shutdown_requested:
@@ -190,6 +208,9 @@ class CliBatchHandler:
                         try:
                             # ИЗМЕНЕНО: Вызов результата из completed_future
                             res: WorkerResult = completed_future.result()
+
+                            if res.peak_memory_mb > self._max_recorded_ram_mb:
+                                self._max_recorded_ram_mb = res.peak_memory_mb
 
                             for record in res.log_records:
                                 main_logger.handle(record)
